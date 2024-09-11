@@ -120,6 +120,15 @@
     .slider {
       width: 100%;
     }
+
+    .estado-luz {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background-color: red; /* Inicia en rojo (apagado) */
+        margin: 10px auto; /* Centra el círculo */
+      }
+
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
@@ -143,18 +152,21 @@
         <h2>Habitación 1</h2>
         <button class="room-btn" id="apagarBtn">Encender Luz</button>
         <button class="room-btn" id="encenderBtn">Apagar Luz</button>
+        <div id="estadoLuzHabitacion1" class="estado-luz"></div>
       </div>
 
       <div class="room">
         <h2>Habitación 2</h2>
         <button class="room-btn" id="encenderAzulBtn">Encender LED Azul</button>
         <button class="room-btn" id="apagarAzulBtn">Apagar LED Azul</button>
+        <div id="estadoLuzHabitacion2" class="estado-luz"></div>
       </div>
 
       <div class="room">
         <h2>Habitación 3</h2>
         <button class="room-btn" id="encenderRojoBtn">Encender LED Rojo</button>
         <button class="room-btn" id="apagarRojoBtn">Apagar LED Rojo</button>
+        <div id="estadoLuzHabitacion3" class="estado-luz"></div>
       </div>
     </div>
 
@@ -165,7 +177,10 @@
         <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
         <p>Brillo: <span id="pwmValue">0</span></p>
       </div>
+      <div id="estadoLuzLedRojo" class="estado-luz"></div>
     </div>
+
+
 
     <!-- Estado de la conexión -->
     <p id="estado">Estado: Desconectado</p>
@@ -191,6 +206,11 @@
       const apagarRojoBtn = document.getElementById('apagarRojoBtn');
       const pwmSlider = document.getElementById('pwmSlider');
       const pwmValue = document.getElementById('pwmValue');
+      const estadoLuzHabitacion1 = document.getElementById('estadoLuzHabitacion1');
+      const estadoLuzHabitacion2 = document.getElementById('estadoLuzHabitacion2');
+      const estadoLuzHabitacion3 = document.getElementById('estadoLuzHabitacion3');
+      const estadoLuzLedRojo = document.getElementById('estadoLuzLedRojo');
+
 
       // Eventos de conexión
       client.on('connect', () => {
@@ -214,28 +234,85 @@
         });
       }
 
+      // Funciones para cambiar el color del círculo
+      function encenderLuz() {
+        estadoLuz.style.backgroundColor = 'green'; // Cambia a verde
+      }
+
+      function apagarLuz() {
+        estadoLuz.style.backgroundColor = 'red'; // Cambia a rojo
+      }
+
+              function encenderLuzHabitacion1() {
+          estadoLuzHabitacion1.style.backgroundColor = 'green'; // Cambia a verde
+        }
+
+        function apagarLuzHabitacion1() {
+          estadoLuzHabitacion1.style.backgroundColor = 'red'; // Cambia a rojo
+        }
+
+        function encenderLuzHabitacion2() {
+          estadoLuzHabitacion2.style.backgroundColor = 'green'; // Cambia a verde
+        }
+
+        function apagarLuzHabitacion2() {
+          estadoLuzHabitacion2.style.backgroundColor = 'red'; // Cambia a rojo
+        }
+
+        function encenderLuzHabitacion3() {
+          estadoLuzHabitacion3.style.backgroundColor = 'green'; // Cambia a verde
+        }
+
+        function apagarLuzHabitacion3() {
+          estadoLuzHabitacion3.style.backgroundColor = 'red'; // Cambia a rojo
+        }
+
+        function encenderLedRojo() {
+          estadoLuzLedRojo.style.backgroundColor = 'green'; // Cambia a verde
+        }
+
+        function apagarLedRojo() {
+          estadoLuzLedRojo.style.backgroundColor = 'red'; // Cambia a rojo
+        }
+        function actualizarEstadoPWM(value) {
+          if (value > 0) {
+            encenderLedRojo(); // Cambia a verde si el valor del PWM es mayor a 0
+          } else {
+            apagarLedRojo(); // Cambia a rojo si el valor del PWM es 0
+          }
+        }
+
+
       // Acciones de los botones
       encenderBtn.addEventListener('click', () => {
         enviarMensaje('casa/luz', 'on');
+        apagarLuzHabitacion1();
+        encenderLuz();
       });
 
       apagarBtn.addEventListener('click', () => {
         enviarMensaje('casa/luz', 'off');
+        encenderLuzHabitacion1();
+        apagarLuz();
       });
 
       encenderAzulBtn.addEventListener('click', () => {
+        encenderLuzHabitacion2();
         enviarMensaje('casa/ledazul', 'on');
       });
 
       apagarAzulBtn.addEventListener('click', () => {
+        apagarLuzHabitacion2();
         enviarMensaje('casa/ledazul', 'off');
       });
 
       encenderRojoBtn.addEventListener('click', () => {
+        encenderLuzHabitacion3();
         enviarMensaje('casa/ledrojo', 'on');
       });
 
       apagarRojoBtn.addEventListener('click', () => {
+        apagarLuzHabitacion3();
         enviarMensaje('casa/ledrojo', 'off');
       });
 
@@ -243,6 +320,7 @@
         const value = pwmSlider.value;
         pwmValue.textContent = value;
         enviarMensaje('casa/ledrojo/pwm', value);
+        actualizarEstadoPWM(value);
       });
     </script>
   </div>
