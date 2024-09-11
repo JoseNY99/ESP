@@ -8,21 +8,27 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      display: flex;
+      overflow-x: hidden; /* Evita el desplazamiento horizontal */
     }
 
     .sidebar {
-      width: 250px;
+      width: 150px;
       height: 100vh;
       background-color: #333;
       color: #fff;
       padding: 1rem;
       position: fixed;
       top: 0;
-      left: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 1000; /* Ensures the sidebar is above other elements */
+      left: 0; /* Asegúrate de que la barra lateral siempre esté visible */
+      z-index: 1000;
+    }
+
+    h1 {
+      text-align: center; /* Centra el texto horizontalmente */
+    }
+
+    .sidebar.active {
+      left: 0; /* Muestra la barra lateral cuando está activa */
     }
 
     .sidebar h2 {
@@ -43,10 +49,25 @@
     }
 
     .content {
-      margin-left: 250px;
       padding: 1rem;
-      width: calc(100% - 250px);
-      box-sizing: border-box; /* Ensure padding is included in width */
+      margin-left: 250px; /* Ajusta esto para alinear correctamente con la barra lateral visible */
+    }
+
+    .content.shifted {
+      margin-left: 300px; /* Mueve el contenido cuando la barra lateral está activa */
+    }
+
+    .menu-btn {
+      font-size: 1.5rem;
+      cursor: pointer;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 1001; /* Asegura que el botón esté por encima de otros elementos */
     }
 
     button {
@@ -55,22 +76,95 @@
       font-size: 1rem;
       cursor: pointer;
     }
+
+    .rooms-container {
+      display: flex;
+      flex-wrap: wrap; /* Permite que los elementos se envuelvan en lugar de desbordar */
+      gap: 20px; /* Espacio entre los elementos */
+    }
+
+    .room {
+      border: 2px solid #ccc;
+      padding: 20px;
+      width: 300px; /* Ancho de cada habitación */
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center; /* Centra los elementos dentro de la habitación */
+    }
+
+    .room h2 {
+      text-align: center;
+    }
+
+    .room-btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #333;
+      background-color: #f7f7f7;
+      cursor: pointer;
+    }
+
+    .room-btn:hover {
+      background-color: #e7e7e7;
+    }
+
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .slider {
+      width: 100%;
+    }
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
-  <div class="sidebar">
+  <!-- Barra lateral -->
+  <div class="sidebar" id="sidebar">
     <h2>Menú</h2>
     <a href="menu.html">Control de Luz</a>
     <a href="iframe.html">Dashboard</a>
+    <a href="index.html">Salir</a>
   </div>
 
-  <div class="content">
-    <h1>Control de Luz con shiftr.io</h1>
-    
+  <!-- Contenido principal -->
+  <div class="content" id="content">
+    <h1>Control de Luz</h1>
+
     <!-- Botones para controlar la luz -->
-    <button id="encenderBtn">Encender Luz</button>
-    <button id="apagarBtn">Apagar Luz</button>
+    <div class="rooms-container">
+      <div class="room">
+        <h2>Habitación 1</h2>
+        <button class="room-btn" id="apagarBtn">Encender Luz</button>
+        <button class="room-btn" id="encenderBtn">Apagar Luz</button>
+      </div>
+
+      <div class="room">
+        <h2>Habitación 2</h2>
+        <button class="room-btn" id="encenderAzulBtn">Encender LED Azul</button>
+        <button class="room-btn" id="apagarAzulBtn">Apagar LED Azul</button>
+      </div>
+
+      <div class="room">
+        <h2>Habitación 3</h2>
+        <button class="room-btn" id="encenderRojoBtn">Encender LED Rojo</button>
+        <button class="room-btn" id="apagarRojoBtn">Apagar LED Rojo</button>
+      </div>
+    </div>
+
+    <!-- Control de brillo del LED rojo -->
+    <div class="room">
+      <h2>Control de LED Rojo - Brillo PWM</h2>
+      <div class="slider-container">
+        <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
+        <p>Brillo: <span id="pwmValue">0</span></p>
+      </div>
+    </div>
 
     <!-- Estado de la conexión -->
     <p id="estado">Estado: Desconectado</p>
@@ -90,6 +184,12 @@
       const estado = document.getElementById('estado');
       const encenderBtn = document.getElementById('encenderBtn');
       const apagarBtn = document.getElementById('apagarBtn');
+      const encenderAzulBtn = document.getElementById('encenderAzulBtn');
+      const apagarAzulBtn = document.getElementById('apagarAzulBtn');
+      const encenderRojoBtn = document.getElementById('encenderRojoBtn');
+      const apagarRojoBtn = document.getElementById('apagarRojoBtn');
+      const pwmSlider = document.getElementById('pwmSlider');
+      const pwmValue = document.getElementById('pwmValue');
 
       // Eventos de conexión
       client.on('connect', () => {
@@ -103,23 +203,45 @@
       });
 
       // Función para publicar un mensaje en MQTT
-      function enviarMensaje(mensaje) {
-        client.publish('casa/luz', mensaje, (err) => {
+      function enviarMensaje(topic, mensaje) {
+        client.publish(topic, mensaje, (err) => {
           if (err) {
             console.error('Error al enviar mensaje:', err);
           } else {
-            console.log(`Mensaje enviado: ${mensaje}`);
+            console.log(`Mensaje enviado: ${mensaje} en ${topic}`);
           }
         });
       }
 
       // Acciones de los botones
       encenderBtn.addEventListener('click', () => {
-        enviarMensaje('on'); // Publica "on" en el tema "casa/luz"
+        enviarMensaje('casa/luz', 'on');
       });
 
       apagarBtn.addEventListener('click', () => {
-        enviarMensaje('off'); // Publica "off" en el tema "casa/luz"
+        enviarMensaje('casa/luz', 'off');
+      });
+
+      encenderAzulBtn.addEventListener('click', () => {
+        enviarMensaje('casa/ledazul', 'on');
+      });
+
+      apagarAzulBtn.addEventListener('click', () => {
+        enviarMensaje('casa/ledazul', 'off');
+      });
+
+      encenderRojoBtn.addEventListener('click', () => {
+        enviarMensaje('casa/ledrojo', 'on');
+      });
+
+      apagarRojoBtn.addEventListener('click', () => {
+        enviarMensaje('casa/ledrojo', 'off');
+      });
+
+      pwmSlider.addEventListener('input', () => {
+        const value = pwmSlider.value;
+        pwmValue.textContent = value;
+        enviarMensaje('casa/ledrojo/pwm', value);
       });
     </script>
   </div>
