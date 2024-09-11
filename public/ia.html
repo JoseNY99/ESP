@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini</title>
+  <style>
+/* Estilos generales */
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* Contenedor principal */
+.contenedor {
+  max-width: 600px;
+  padding: 30px;
+  margin: 0 auto;
+}
+
+/* Título */
+h1 {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* Consulta */
+#consulta {
+  width: 100%;
+  height: 200px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* Botón de consulta */
+#botonConsulta {
+  display: block;
+  margin: 30px auto 0 auto;
+  padding: 10px 20px;
+  border: 1px solid #000;
+  border-radius: 5px;
+  background-color: #000;
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Resultados de la consulta */
+#resultadoConsulta {
+  background-color: #eee;
+  padding: 10px;
+  margin-top: 30px;
+  font-family: monospace;
+}
+
+/* Cargando... */
+.loading {
+  color: #666;
+  font-size: 1.2rem;
+  text-align: center;
+}
+.sidebar {
+      width: 150px;
+      height: 100vh;
+      background-color: #333;
+      color: #fff;
+      padding: 1rem;
+      position: fixed;
+      top: 0;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      padding: 0.5rem 0;
+      font-size: 1.2rem;
+    }
+
+    .sidebar a:hover {
+      background-color: #575757;
+    }
+
+  </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Menú</h2>
+        <a href="menu.html">Control de Luz</a>
+        <a href="iframe.html">Dashboard</a>
+        <a href="ia.html">IA</a>
+        <a href="index.html">Salir</a>
+      </div>
+  <div class="contenedor">
+    <h1>Formulario de Consulta a GEMINI</h1>
+    <div>
+      <textarea id="consulta"></textarea>
+    </div>
+    <button type="button" id="botonConsulta">Consultar</button>
+    <pre id="resultadoConsulta"></pre>
+  </div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import { GoogleGenerativeAI } from "@google/generative-ai"
+    const clave = "AIzaSyCxRDa-O8tYEEs78is4tOGt0G-mD0nPrY4"  // copiar su clave
+
+    const genAI = new GoogleGenerativeAI(clave)
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+
+    document.querySelector("#botonConsulta").addEventListener("click", async () => {
+      desactivarBoton()
+      const consulta = document.querySelector("#consulta").value
+      const resultadoConsulta = document.querySelector("#resultadoConsulta")
+      try {
+        const result = await model.generateContent(consulta)
+        const response = await result.response
+        const text = response.text()
+        resultadoConsulta.innerHTML = text
+      } catch (error) {
+        resultadoConsulta.innerHTML = 'Problemas en la consulta'
+      }
+      activarBoton()
+    })
+
+    function desactivarBoton() {
+      const botonConsulta = document.querySelector("#botonConsulta")
+      botonConsulta.disabled = true
+      botonConsulta.innerText = "Consultando..."
+    }
+
+    function activarBoton() {
+      const botonConsulta = document.querySelector("#botonConsulta")
+      botonConsulta.disabled = false
+      botonConsulta.innerText = "Consultar"
+    }
+  </script>
+</body>
+
+</html>
