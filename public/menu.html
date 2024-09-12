@@ -21,18 +21,18 @@
       background-color: var(--background-color);
       color: var(--text-color);
       overflow-x: hidden;
+    }
+
+    .page-container {
       display: flex;
+      min-height: 100vh;
     }
 
     .sidebar {
       width: 220px;
-      height: 100vh;
       background-color: var(--sidebar-color);
       color: #fff;
       padding: 2rem;
-      position: fixed;
-      top: 0;
-      left: 0;
       display: flex;
       flex-direction: column;
       transition: all 0.3s ease;
@@ -66,7 +66,6 @@
     .content {
       flex-grow: 1;
       padding: 2rem;
-      margin-left: 220px;
       transition: all 0.3s ease;
     }
 
@@ -79,7 +78,7 @@
 
     .rooms-container {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 2rem;
     }
 
@@ -175,173 +174,179 @@
     }
 
     @media (max-width: 768px) {
+      .page-container {
+        flex-direction: column;
+      }
+
       .sidebar {
         width: 100%;
-        height: auto;
-        position: relative;
         padding: 1rem;
       }
 
       .content {
-        margin-left: 0;
-        width: 100%;
         padding: 1rem;
       }
 
-      body {
-        flex-direction: column;
+      .rooms-container {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 2rem;
       }
     }
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
-  <div class="sidebar">
-    <h2>Menú</h2>
-    <a href="menu.html">Control de Luz</a>
-    <a href="iframe.html">Dashboard</a>
-    <a href="ia.html">IA</a>
-    <a href="index.html">Salir</a>
-  </div>
-
-  <div class="content">
-    <h1>Control de Luz</h1>
-
-    <div class="rooms-container">
-      <div class="room">
-        <h2>Habitación 1</h2>
-        <button class="room-btn" id="encenderBtn">Encender Luz</button>
-        <button class="room-btn" id="apagarBtn">Apagar Luz</button>
-        <div id="estadoLuzHabitacion1" class="estado-luz"></div>
-      </div>
-
-      <div class="room">
-        <h2>Habitación 2</h2>
-        <button class="room-btn" id="encenderAzulBtn">Encender LED Azul</button>
-        <button class="room-btn" id="apagarAzulBtn">Apagar LED Azul</button>
-        <div id="estadoLuzHabitacion2" class="estado-luz"></div>
-      </div>
-
-      <div class="room">
-        <h2>Habitación 3</h2>
-        <button class="room-btn" id="encenderRojoBtn">Encender LED Rojo</button>
-        <button class="room-btn" id="apagarRojoBtn">Apagar LED Rojo</button>
-        <div id="estadoLuzHabitacion3" class="estado-luz"></div>
-      </div>
-
-      <div class="room">
-        <h2>Control de LED Rojo - Brillo PWM</h2>
-        <div class="slider-container">
-          <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
-          <p>Brillo: <span id="pwmValue">0</span></p>
-        </div>
-        <div id="estadoLuzLedRojo" class="estado-luz"></div>
-      </div>
+  <div class="page-container">
+    <div class="sidebar">
+      <h2>Menú</h2>
+      <a href="menu.html">Control de Luz</a>
+      <a href="iframe.html">Dashboard</a>
+      <a href="ia.html">IA</a>
+      <a href="index.html">Salir</a>
     </div>
 
-    <p id="estado">Estado: Desconectado</p>
+    <div class="content">
+      <h1>Control de Luz</h1>
 
-    <script>
-      // Configuración MQTT
-      const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
-      const mqttOptions = {
-        username: 'crazyjester833',
-        password: 'MOX70ExUuSBpjdQl'
-      };
+      <div class="rooms-container">
+        <div class="room">
+          <h2>Habitación 1</h2>
+          <button class="room-btn" id="encenderBtn">Encender Luz</button>
+          <button class="room-btn" id="apagarBtn">Apagar Luz</button>
+          <div id="estadoLuzHabitacion1" class="estado-luz"></div>
+        </div>
 
-      // Conectar al broker MQTT
-      const client = mqtt.connect(mqttServer, mqttOptions);
+        <div class="room">
+          <h2>Habitación 2</h2>
+          <button class="room-btn" id="encenderAzulBtn">Encender LED Azul</button>
+          <button class="room-btn" id="apagarAzulBtn">Apagar LED Azul</button>
+          <div id="estadoLuzHabitacion2" class="estado-luz"></div>
+        </div>
 
-      // Elementos del DOM
-      const estado = document.getElementById('estado');
-      const encenderBtn = document.getElementById('encenderBtn');
-      const apagarBtn = document.getElementById('apagarBtn');
-      const encenderAzulBtn = document.getElementById('encenderAzulBtn');
-      const apagarAzulBtn = document.getElementById('apagarAzulBtn');
-      const encenderRojoBtn = document.getElementById('encenderRojoBtn');
-      const apagarRojoBtn = document.getElementById('apagarRojoBtn');
-      const pwmSlider = document.getElementById('pwmSlider');
-      const pwmValue = document.getElementById('pwmValue');
-      const estadoLuzHabitacion1 = document.getElementById('estadoLuzHabitacion1');
-      const estadoLuzHabitacion2 = document.getElementById('estadoLuzHabitacion2');
-      const estadoLuzHabitacion3 = document.getElementById('estadoLuzHabitacion3');
-      const estadoLuzLedRojo = document.getElementById('estadoLuzLedRojo');
+        <div class="room">
+          <h2>Habitación 3</h2>
+          <button class="room-btn" id="encenderRojoBtn">Encender LED Rojo</button>
+          <button class="room-btn" id="apagarRojoBtn">Apagar LED Rojo</button>
+          <div id="estadoLuzHabitacion3" class="estado-luz"></div>
+        </div>
 
-      // Eventos de conexión
-      client.on('connect', () => {
-        console.log('Conectado a shiftr.io');
-        estado.textContent = 'Estado: Conectado';
-      });
+        <div class="room">
+          <h2>Control de LED Rojo - Brillo PWM</h2>
+          <div class="slider-container">
+            <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
+            <p>Brillo: <span id="pwmValue">0</span></p>
+          </div>
+          <div id="estadoLuzLedRojo" class="estado-luz"></div>
+        </div>
+      </div>
 
-      client.on('error', (error) => {
-        console.error('Error de conexión:', error);
-        estado.textContent = 'Estado: Error de conexión';
-      });
+      <p id="estado">Estado: Desconectado</p>
+    </div>
+  </div>
 
-      // Función para publicar un mensaje en MQTT
-      function enviarMensaje(topic, mensaje) {
-        client.publish(topic, mensaje, (err) => {
-          if (err) {
-            console.error('Error al enviar mensaje:', err);
-          } else {
-            console.log(`Mensaje enviado: ${mensaje} en ${topic}`);
-          }
-        });
-      }
+  <script>
+    // Configuración MQTT
+    const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
+    const mqttOptions = {
+      username: 'crazyjester833',
+      password: 'MOX70ExUuSBpjdQl'
+    };
 
-      // Funciones para cambiar el color del círculo
-      function encenderLuz(elemento) {
-        elemento.style.backgroundColor = '#2ecc71';
-        elemento.style.boxShadow = '0 0 10px #2ecc71';
-      }
+    // Conectar al broker MQTT
+    const client = mqtt.connect(mqttServer, mqttOptions);
 
-      function apagarLuz(elemento) {
-        elemento.style.backgroundColor = '#e74c3c';
-        elemento.style.boxShadow = 'none';
-      }
+    // Elementos del DOM
+    const estado = document.getElementById('estado');
+    const encenderBtn = document.getElementById('encenderBtn');
+    const apagarBtn = document.getElementById('apagarBtn');
+    const encenderAzulBtn = document.getElementById('encenderAzulBtn');
+    const apagarAzulBtn = document.getElementById('apagarAzulBtn');
+    const encenderRojoBtn = document.getElementById('encenderRojoBtn');
+    const apagarRojoBtn = document.getElementById('apagarRojoBtn');
+    const pwmSlider = document.getElementById('pwmSlider');
+    const pwmValue = document.getElementById('pwmValue');
+    const estadoLuzHabitacion1 = document.getElementById('estadoLuzHabitacion1');
+    const estadoLuzHabitacion2 = document.getElementById('estadoLuzHabitacion2');
+    const estadoLuzHabitacion3 = document.getElementById('estadoLuzHabitacion3');
+    const estadoLuzLedRojo = document.getElementById('estadoLuzLedRojo');
 
-      // Acciones de los botones
-      encenderBtn.addEventListener('click', () => {
-        enviarMensaje('casa/luz', 'on');
-        encenderLuz(estadoLuzHabitacion1);
-      });
+    // Eventos de conexión
+    client.on('connect', () => {
+      console.log('Conectado a shiftr.io');
+      estado.textContent = 'Estado: Conectado';
+    });
 
-      apagarBtn.addEventListener('click', () => {
-        enviarMensaje('casa/luz', 'off');
-        apagarLuz(estadoLuzHabitacion1);
-      });
+    client.on('error', (error) => {
+      console.error('Error de conexión:', error);
+      estado.textContent = 'Estado: Error de conexión';
+    });
 
-      encenderAzulBtn.addEventListener('click', () => {
-        enviarMensaje('casa/ledazul', 'on');
-        encenderLuz(estadoLuzHabitacion2);
-      });
-
-      apagarAzulBtn.addEventListener('click', () => {
-        enviarMensaje('casa/ledazul', 'off');
-        apagarLuz(estadoLuzHabitacion2);
-      });
-
-      encenderRojoBtn.addEventListener('click', () => {
-        enviarMensaje('casa/ledrojo', 'on');
-        encenderLuz(estadoLuzHabitacion3);
-      });
-
-      apagarRojoBtn.addEventListener('click', () => {
-        enviarMensaje('casa/ledrojo', 'off');
-        apagarLuz(estadoLuzHabitacion3);
-      });
-
-      pwmSlider.addEventListener('input', () => {
-        const value = pwmSlider.value;
-        pwmValue.textContent = value;
-        enviarMensaje('casa/ledrojo/pwm', value);
-        if (value > 0) {
-          encenderLuz(estadoLuzLedRojo);
+    // Función para publicar un mensaje en MQTT
+    function enviarMensaje(topic, mensaje) {
+      client.publish(topic, mensaje, (err) => {
+        if (err) {
+          console.error('Error al enviar mensaje:', err);
         } else {
-          apagarLuz(estadoLuzLedRojo);
+          console.log(`Mensaje enviado: ${mensaje} en ${topic}`);
         }
       });
-    </script>
-  </div>
+    }
+
+    // Funciones para cambiar el color del círculo
+    function encenderLuz(elemento) {
+      elemento.style.backgroundColor = '#2ecc71';
+      elemento.style.boxShadow = '0 0 10px #2ecc71';
+    }
+
+    function apagarLuz(elemento) {
+      elemento.style.backgroundColor = '#e74c3c';
+      elemento.style.boxShadow = 'none';
+    }
+
+    // Acciones de los botones
+    encenderBtn.addEventListener('click', () => {
+      enviarMensaje('casa/luz', 'on');
+      encenderLuz(estadoLuzHabitacion1);
+    });
+
+    apagarBtn.addEventListener('click', () => {
+      enviarMensaje('casa/luz', 'off');
+      apagarLuz(estadoLuzHabitacion1);
+    });
+
+    encenderAzulBtn.addEventListener('click', () => {
+      enviarMensaje('casa/ledazul', 'on');
+      encenderLuz(estadoLuzHabitacion2);
+    });
+
+    apagarAzulBtn.addEventListener('click', () => {
+      enviarMensaje('casa/ledazul', 'off');
+      apagarLuz(estadoLuzHabitacion2);
+    });
+
+    encenderRojoBtn.addEventListener('click', () => {
+      enviarMensaje('casa/ledrojo', 'on');
+      encenderLuz(estadoLuzHabitacion3);
+    });
+
+    apagarRojoBtn.addEventListener('click', () => {
+      enviarMensaje('casa/ledrojo', 'off');
+      apagarLuz(estadoLuzHabitacion3);
+    });
+
+    pwmSlider.addEventListener('input', () => {
+      const value = pwmSlider.value;
+      pwmValue.textContent = value;
+      enviarMensaje('casa/ledrojo/pwm', value);
+      if (value > 0) {
+        encenderLuz(estadoLuzLedRojo);
+      } else {
+        apagarLuz(estadoLuzLedRojo);
+      }
+    });
+  </script>
 </body>
 </html>

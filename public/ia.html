@@ -18,21 +18,21 @@
     body {
       margin: 0;
       font-family: 'Poppins', sans-serif;
-      display: flex;
       background-color: var(--background-color);
       color: var(--text-color);
+    }
+
+    .page-container {
+      display: flex;
+      min-height: 100vh;
     }
 
     /* Sidebar */
     .sidebar {
       width: 220px;
-      height: 100vh;
       background-color: var(--sidebar-color);
       color: #fff;
       padding: 2rem;
-      position: fixed;
-      top: 0;
-      left: 0;
       display: flex;
       flex-direction: column;
       transition: all 0.3s ease;
@@ -65,9 +65,8 @@
 
     /* Contenedor principal */
     .contenedor {
-      margin-left: 220px;
+      flex-grow: 1;
       padding: 2rem;
-      width: calc(100% - 220px);
       transition: all 0.3s ease;
     }
 
@@ -90,6 +89,7 @@
       line-height: 1.5rem;
       background-color: #fff;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      resize: vertical;
     }
 
     /* Botón de consulta */
@@ -110,6 +110,11 @@
       background-color: var(--hover-color);
     }
 
+    #botonConsulta:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
     /* Resultados de la consulta */
     #resultadoConsulta {
       background-color: #f9f9f9;
@@ -119,6 +124,8 @@
       font-family: monospace;
       min-height: 100px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
     /* Estilo para mostrar que está cargando */
@@ -130,16 +137,16 @@
 
     /* Responsive design */
     @media (max-width: 768px) {
+      .page-container {
+        flex-direction: column;
+      }
+
       .sidebar {
         width: 100%;
-        height: auto;
-        position: relative;
         padding: 1rem;
       }
 
       .contenedor {
-        margin-left: 0;
-        width: 100%;
         padding: 1rem;
       }
 
@@ -151,21 +158,23 @@
 </head>
 
 <body>
-  <div class="sidebar">
-    <h2>Menú</h2>
-    <a href="menu.html">Control de Luz</a>
-    <a href="iframe.html">Dashboard</a>
-    <a href="ia.html">IA</a>
-    <a href="index.html">Salir</a>
-  </div>
-
-  <div class="contenedor">
-    <h1>Formulario de Consulta a GEMINI</h1>
-    <div>
-      <textarea id="consulta" placeholder="Escribe tu consulta aquí..."></textarea>
+  <div class="page-container">
+    <div class="sidebar">
+      <h2>Menú</h2>
+      <a href="menu.html">Control de Luz</a>
+      <a href="iframe.html">Dashboard</a>
+      <a href="ia.html">IA</a>
+      <a href="index.html">Salir</a>
     </div>
-    <button type="button" id="botonConsulta">Consultar</button>
-    <pre id="resultadoConsulta"></pre>
+
+    <div class="contenedor">
+      <h1>Formulario de Consulta a GEMINI</h1>
+      <div>
+        <textarea id="consulta" placeholder="Escribe tu consulta aquí..." rows="5"></textarea>
+      </div>
+      <button type="button" id="botonConsulta">Consultar</button>
+      <pre id="resultadoConsulta"></pre>
+    </div>
   </div>
 
   <script type="importmap">
@@ -183,31 +192,43 @@
     const genAI = new GoogleGenerativeAI(clave);
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    document.querySelector("#botonConsulta").addEventListener("click", async () => {
-      desactivarBoton();
-      const consulta = document.querySelector("#consulta").value;
-      const resultadoConsulta = document.querySelector("#resultadoConsulta");
-      try {
-        const result = await model.generateContent(consulta);
-        const response = await result.response;
-        const text = response.text();
-        resultadoConsulta.innerHTML = text;
-      } catch (error) {
-        resultadoConsulta.innerHTML = 'Problemas en la consulta';
+    const botonConsulta = document.querySelector("#botonConsulta");
+    const consulta = document.querySelector("#consulta");
+    const resultadoConsulta = document.querySelector("#resultadoConsulta");
+
+    botonConsulta.addEventListener("click", realizarConsulta);
+    consulta.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        realizarConsulta();
       }
-      activarBoton();
     });
 
+    async function realizarConsulta() {
+      if (!consulta.value.trim()) return;
+
+      desactivarBoton();
+      resultadoConsulta.textContent = "Consultando...";
+
+      try {
+        const result = await model.generateContent(consulta.value);
+        const response = await result.response;
+        resultadoConsulta.textContent = response.text();
+      } catch (error) {
+        resultadoConsulta.textContent = 'Problemas en la consulta: ' + error.message;
+      } finally {
+        activarBoton();
+      }
+    }
+
     function desactivarBoton() {
-      const botonConsulta = document.querySelector("#botonConsulta");
       botonConsulta.disabled = true;
-      botonConsulta.innerText = "Consultando...";
+      botonConsulta.textContent = "Consultando...";
     }
 
     function activarBoton() {
-      const botonConsulta = document.querySelector("#botonConsulta");
       botonConsulta.disabled = false;
-      botonConsulta.innerText = "Consultar";
+      botonConsulta.textContent = "Consultar";
     }
   </script>
 </body>
