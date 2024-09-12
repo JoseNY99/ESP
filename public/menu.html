@@ -4,137 +4,199 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Luz con shiftr.io</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --background-color: #f5f7fa;
+      --text-color: #34495e;
+      --sidebar-color: #2c3e50;
+      --hover-color: #3498db;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      overflow-x: hidden; /* Evita el desplazamiento horizontal */
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      overflow-x: hidden;
+      display: flex;
     }
 
     .sidebar {
-      width: 150px;
+      width: 220px;
       height: 100vh;
-      background-color: #333;
+      background-color: var(--sidebar-color);
       color: #fff;
-      padding: 1rem;
+      padding: 2rem;
       position: fixed;
       top: 0;
-      left: 0; /* Asegúrate de que la barra lateral siempre esté visible */
-      z-index: 1000;
-    }
-
-    h1 {
-      text-align: center; /* Centra el texto horizontalmente */
-    }
-
-    .sidebar.active {
-      left: 0; /* Muestra la barra lateral cuando está activa */
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     }
 
     .sidebar h2 {
       margin-top: 0;
-      font-size: 1.5rem;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
     }
 
     .sidebar a {
       display: block;
       color: #fff;
       text-decoration: none;
-      padding: 0.5rem 0;
-      font-size: 1.2rem;
+      padding: 0.8rem 1rem;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      margin-bottom: 0.5rem;
     }
 
     .sidebar a:hover {
-      background-color: #575757;
+      background-color: var(--hover-color);
+      transform: translateX(5px);
     }
 
     .content {
-      padding: 1rem;
-      margin-left: 250px; /* Ajusta esto para alinear correctamente con la barra lateral visible */
+      flex-grow: 1;
+      padding: 2rem;
+      margin-left: 220px;
+      transition: all 0.3s ease;
     }
 
-    .content.shifted {
-      margin-left: 300px; /* Mueve el contenido cuando la barra lateral está activa */
-    }
-
-    .menu-btn {
-      font-size: 1.5rem;
-      cursor: pointer;
-      background-color: #333;
-      color: #fff;
-      border: none;
-      padding: 10px;
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 1001; /* Asegura que el botón esté por encima de otros elementos */
-    }
-
-    button {
-      margin: 5px;
-      padding: 10px;
-      font-size: 1rem;
-      cursor: pointer;
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
     }
 
     .rooms-container {
-      display: flex;
-      flex-wrap: wrap; /* Permite que los elementos se envuelvan en lugar de desbordar */
-      gap: 20px; /* Espacio entre los elementos */
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
     }
 
     .room {
-      border: 2px solid #ccc;
-      padding: 20px;
-      width: 300px; /* Ancho de cada habitación */
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      align-items: center; /* Centra los elementos dentro de la habitación */
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    .room:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
     }
 
     .room h2 {
       text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 1.5rem;
     }
 
     .room-btn {
       display: block;
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #333;
-      background-color: #f7f7f7;
+      padding: 0.8rem;
+      margin: 0.8rem 0;
+      border: none;
+      border-radius: 5px;
+      background-color: var(--primary-color);
+      color: #fff;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .room-btn:hover {
-      background-color: #e7e7e7;
+      background-color: #2980b9;
     }
 
     .slider-container {
       display: flex;
       flex-direction: column;
       align-items: center;
+      margin-top: 1.5rem;
     }
     
     .slider {
       width: 100%;
+      -webkit-appearance: none;
+      height: 10px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+
+    .slider:hover {
+      opacity: 1;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--secondary-color);
+      cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--secondary-color);
+      cursor: pointer;
     }
 
     .estado-luz {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        background-color: red; /* Inicia en rojo (apagado) */
-        margin: 10px auto; /* Centra el círculo */
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: #e74c3c;
+      margin: 1rem auto;
+      transition: all 0.3s ease;
+    }
+    
+    #estado {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 2rem;
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 1rem;
       }
 
+      .content {
+        margin-left: 0;
+        width: 100%;
+        padding: 1rem;
+      }
+
+      body {
+        flex-direction: column;
+      }
+    }
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
-  <!-- Barra lateral -->
-  <div class="sidebar" id="sidebar">
+  <div class="sidebar">
     <h2>Menú</h2>
     <a href="menu.html">Control de Luz</a>
     <a href="iframe.html">Dashboard</a>
@@ -142,16 +204,14 @@
     <a href="index.html">Salir</a>
   </div>
 
-  <!-- Contenido principal -->
-  <div class="content" id="content">
+  <div class="content">
     <h1>Control de Luz</h1>
 
-    <!-- Botones para controlar la luz -->
     <div class="rooms-container">
       <div class="room">
         <h2>Habitación 1</h2>
-        <button class="room-btn" id="apagarBtn">Encender Luz</button>
-        <button class="room-btn" id="encenderBtn">Apagar Luz</button>
+        <button class="room-btn" id="encenderBtn">Encender Luz</button>
+        <button class="room-btn" id="apagarBtn">Apagar Luz</button>
         <div id="estadoLuzHabitacion1" class="estado-luz"></div>
       </div>
 
@@ -168,26 +228,22 @@
         <button class="room-btn" id="apagarRojoBtn">Apagar LED Rojo</button>
         <div id="estadoLuzHabitacion3" class="estado-luz"></div>
       </div>
-    </div>
 
-    <!-- Control de brillo del LED rojo -->
-    <div class="room">
-      <h2>Control de LED Rojo - Brillo PWM</h2>
-      <div class="slider-container">
-        <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
-        <p>Brillo: <span id="pwmValue">0</span></p>
+      <div class="room">
+        <h2>Control de LED Rojo - Brillo PWM</h2>
+        <div class="slider-container">
+          <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
+          <p>Brillo: <span id="pwmValue">0</span></p>
+        </div>
+        <div id="estadoLuzLedRojo" class="estado-luz"></div>
       </div>
-      <div id="estadoLuzLedRojo" class="estado-luz"></div>
     </div>
 
-
-
-    <!-- Estado de la conexión -->
     <p id="estado">Estado: Desconectado</p>
 
     <script>
       // Configuración MQTT
-      const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443'; // Servidor MQTT (WebSocket)
+      const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
       const mqttOptions = {
         username: 'crazyjester833',
         password: 'MOX70ExUuSBpjdQl'
@@ -210,7 +266,6 @@
       const estadoLuzHabitacion2 = document.getElementById('estadoLuzHabitacion2');
       const estadoLuzHabitacion3 = document.getElementById('estadoLuzHabitacion3');
       const estadoLuzLedRojo = document.getElementById('estadoLuzLedRojo');
-
 
       // Eventos de conexión
       client.on('connect', () => {
@@ -235,92 +290,56 @@
       }
 
       // Funciones para cambiar el color del círculo
-      function encenderLuz() {
-        estadoLuz.style.backgroundColor = 'green'; // Cambia a verde
+      function encenderLuz(elemento) {
+        elemento.style.backgroundColor = '#2ecc71';
+        elemento.style.boxShadow = '0 0 10px #2ecc71';
       }
 
-      function apagarLuz() {
-        estadoLuz.style.backgroundColor = 'red'; // Cambia a rojo
+      function apagarLuz(elemento) {
+        elemento.style.backgroundColor = '#e74c3c';
+        elemento.style.boxShadow = 'none';
       }
-
-              function encenderLuzHabitacion1() {
-          estadoLuzHabitacion1.style.backgroundColor = 'green'; // Cambia a verde
-        }
-
-        function apagarLuzHabitacion1() {
-          estadoLuzHabitacion1.style.backgroundColor = 'red'; // Cambia a rojo
-        }
-
-        function encenderLuzHabitacion2() {
-          estadoLuzHabitacion2.style.backgroundColor = 'green'; // Cambia a verde
-        }
-
-        function apagarLuzHabitacion2() {
-          estadoLuzHabitacion2.style.backgroundColor = 'red'; // Cambia a rojo
-        }
-
-        function encenderLuzHabitacion3() {
-          estadoLuzHabitacion3.style.backgroundColor = 'green'; // Cambia a verde
-        }
-
-        function apagarLuzHabitacion3() {
-          estadoLuzHabitacion3.style.backgroundColor = 'red'; // Cambia a rojo
-        }
-
-        function encenderLedRojo() {
-          estadoLuzLedRojo.style.backgroundColor = 'green'; // Cambia a verde
-        }
-
-        function apagarLedRojo() {
-          estadoLuzLedRojo.style.backgroundColor = 'red'; // Cambia a rojo
-        }
-        function actualizarEstadoPWM(value) {
-          if (value > 0) {
-            encenderLedRojo(); // Cambia a verde si el valor del PWM es mayor a 0
-          } else {
-            apagarLedRojo(); // Cambia a rojo si el valor del PWM es 0
-          }
-        }
-
 
       // Acciones de los botones
       encenderBtn.addEventListener('click', () => {
         enviarMensaje('casa/luz', 'on');
-        apagarLuzHabitacion1();
-        encenderLuz();
+        encenderLuz(estadoLuzHabitacion1);
       });
 
       apagarBtn.addEventListener('click', () => {
         enviarMensaje('casa/luz', 'off');
-        encenderLuzHabitacion1();
-        apagarLuz();
+        apagarLuz(estadoLuzHabitacion1);
       });
 
       encenderAzulBtn.addEventListener('click', () => {
-        encenderLuzHabitacion2();
         enviarMensaje('casa/ledazul', 'on');
+        encenderLuz(estadoLuzHabitacion2);
       });
 
       apagarAzulBtn.addEventListener('click', () => {
-        apagarLuzHabitacion2();
         enviarMensaje('casa/ledazul', 'off');
+        apagarLuz(estadoLuzHabitacion2);
       });
 
       encenderRojoBtn.addEventListener('click', () => {
-        encenderLuzHabitacion3();
         enviarMensaje('casa/ledrojo', 'on');
+        encenderLuz(estadoLuzHabitacion3);
       });
 
       apagarRojoBtn.addEventListener('click', () => {
-        apagarLuzHabitacion3();
         enviarMensaje('casa/ledrojo', 'off');
+        apagarLuz(estadoLuzHabitacion3);
       });
 
       pwmSlider.addEventListener('input', () => {
         const value = pwmSlider.value;
         pwmValue.textContent = value;
         enviarMensaje('casa/ledrojo/pwm', value);
-        actualizarEstadoPWM(value);
+        if (value > 0) {
+          encenderLuz(estadoLuzLedRojo);
+        } else {
+          apagarLuz(estadoLuzLedRojo);
+        }
       });
     </script>
   </div>
