@@ -1,113 +1,168 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gemini</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-/* Estilos generales */
-body {
-  font-family: Arial, sans-serif;
-  line-height: 1.5rem;
-  margin: 0;
-  padding: 0;
-}
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #f5f7fa;
+      --background-color: #f0f2f5;
+      --sidebar-color: #2c3e50;
+      --text-color: #333;
+      --hover-color: #3498db;
+    }
 
-/* Contenedor principal */
-.contenedor {
-  max-width: 600px;
-  padding: 30px;
-  margin: 0 auto;
-}
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
 
-/* Título */
-h1 {
-  font-size: 1.5rem;
-  margin-bottom: 30px;
-  text-align: center;
-}
-
-/* Consulta */
-#consulta {
-  width: 100%;
-  height: 200px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-/* Botón de consulta */
-#botonConsulta {
-  display: block;
-  margin: 30px auto 0 auto;
-  padding: 10px 20px;
-  border: 1px solid #000;
-  border-radius: 5px;
-  background-color: #000;
-  color: #fff;
-  cursor: pointer;
-}
-
-/* Resultados de la consulta */
-#resultadoConsulta {
-  background-color: #eee;
-  padding: 10px;
-  margin-top: 30px;
-  font-family: monospace;
-}
-
-/* Cargando... */
-.loading {
-  color: #666;
-  font-size: 1.2rem;
-  text-align: center;
-}
-.sidebar {
-      width: 150px;
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
       height: 100vh;
-      background-color: #333;
+      background-color: var(--sidebar-color);
       color: #fff;
-      padding: 1rem;
+      padding: 2rem;
       position: fixed;
       top: 0;
       left: 0;
       display: flex;
       flex-direction: column;
+      transition: all 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     }
 
     .sidebar h2 {
       margin-top: 0;
-      font-size: 1.5rem;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
     }
 
     .sidebar a {
       display: block;
       color: #fff;
       text-decoration: none;
-      padding: 0.5rem 0;
-      font-size: 1.2rem;
+      padding: 0.8rem 1rem;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      margin-bottom: 0.5rem;
     }
 
     .sidebar a:hover {
-      background-color: #575757;
+      background-color: var(--hover-color);
+      transform: translateX(5px);
     }
 
+    /* Contenedor principal */
+    .contenedor {
+      margin-left: 220px;
+      padding: 2rem;
+      width: calc(100% - 220px);
+      transition: all 0.3s ease;
+    }
+
+    /* Título */
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 2rem;
+    }
+
+    /* Textarea */
+    textarea {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+      line-height: 1.5rem;
+      background-color: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Botón de consulta */
+    #botonConsulta {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      background-color: var(--primary-color);
+      color: #fff;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #botonConsulta:hover {
+      background-color: var(--hover-color);
+    }
+
+    /* Resultados de la consulta */
+    #resultadoConsulta {
+      background-color: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-family: monospace;
+      min-height: 100px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Estilo para mostrar que está cargando */
+    .loading {
+      text-align: center;
+      font-size: 1.2rem;
+      color: #666;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 1rem;
+      }
+
+      .contenedor {
+        margin-left: 0;
+        width: 100%;
+        padding: 1rem;
+      }
+
+      textarea {
+        height: 150px;
+      }
+    }
   </style>
 </head>
 
 <body>
-    <div class="sidebar">
-        <h2>Menú</h2>
-        <a href="menu.html">Control de Luz</a>
-        <a href="iframe.html">Dashboard</a>
-        <a href="ia.html">IA</a>
-        <a href="index.html">Salir</a>
-      </div>
+  <div class="sidebar">
+    <h2>Menú</h2>
+    <a href="menu.html">Control de Luz</a>
+    <a href="iframe.html">Dashboard</a>
+    <a href="ia.html">IA</a>
+    <a href="index.html">Salir</a>
+  </div>
+
   <div class="contenedor">
     <h1>Formulario de Consulta a GEMINI</h1>
     <div>
-      <textarea id="consulta"></textarea>
+      <textarea id="consulta" placeholder="Escribe tu consulta aquí..."></textarea>
     </div>
     <button type="button" id="botonConsulta">Consultar</button>
     <pre id="resultadoConsulta"></pre>
@@ -123,38 +178,37 @@ h1 {
 
   <script type="module">
     import { GoogleGenerativeAI } from "@google/generative-ai"
-    const clave = "AIzaSyCxRDa-O8tYEEs78is4tOGt0G-mD0nPrY4"  // copiar su clave
+    const clave = "AIzaSyCxRDa-O8tYEEs78is4tOGt0G-mD0nPrY4";  // Copiar tu clave
 
-    const genAI = new GoogleGenerativeAI(clave)
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+    const genAI = new GoogleGenerativeAI(clave);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     document.querySelector("#botonConsulta").addEventListener("click", async () => {
-      desactivarBoton()
-      const consulta = document.querySelector("#consulta").value
-      const resultadoConsulta = document.querySelector("#resultadoConsulta")
+      desactivarBoton();
+      const consulta = document.querySelector("#consulta").value;
+      const resultadoConsulta = document.querySelector("#resultadoConsulta");
       try {
-        const result = await model.generateContent(consulta)
-        const response = await result.response
-        const text = response.text()
-        resultadoConsulta.innerHTML = text
+        const result = await model.generateContent(consulta);
+        const response = await result.response;
+        const text = response.text();
+        resultadoConsulta.innerHTML = text;
       } catch (error) {
-        resultadoConsulta.innerHTML = 'Problemas en la consulta'
+        resultadoConsulta.innerHTML = 'Problemas en la consulta';
       }
-      activarBoton()
-    })
+      activarBoton();
+    });
 
     function desactivarBoton() {
-      const botonConsulta = document.querySelector("#botonConsulta")
-      botonConsulta.disabled = true
-      botonConsulta.innerText = "Consultando..."
+      const botonConsulta = document.querySelector("#botonConsulta");
+      botonConsulta.disabled = true;
+      botonConsulta.innerText = "Consultando...";
     }
 
     function activarBoton() {
-      const botonConsulta = document.querySelector("#botonConsulta")
-      botonConsulta.disabled = false
-      botonConsulta.innerText = "Consultar"
+      const botonConsulta = document.querySelector("#botonConsulta");
+      botonConsulta.disabled = false;
+      botonConsulta.innerText = "Consultar";
     }
   </script>
 </body>
-
 </html>

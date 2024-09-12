@@ -4,59 +4,107 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #f5f7fa;
+      --background-color: #f0f2f5;
+      --sidebar-color: #2c3e50;
+      --text-color: #333;
+      --hover-color: #3498db;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', sans-serif;
       display: flex;
+      background-color: var(--background-color);
+      color: var(--text-color);
     }
 
     .sidebar {
-      width: 150px;
+      width: 220px;
       height: 100vh;
-      background-color: #333;
+      background-color: var(--sidebar-color);
       color: #fff;
-      padding: 1rem;
+      padding: 2rem;
       position: fixed;
       top: 0;
       left: 0;
       display: flex;
       flex-direction: column;
+      transition: all 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     }
 
     .sidebar h2 {
       margin-top: 0;
-      font-size: 1.5rem;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
     }
 
     .sidebar a {
       display: block;
       color: #fff;
       text-decoration: none;
-      padding: 0.5rem 0;
-      font-size: 1.2rem;
+      padding: 0.8rem 1rem;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      margin-bottom: 0.5rem;
     }
 
     .sidebar a:hover {
-      background-color: #575757;
+      background-color: var(--hover-color);
+      transform: translateX(5px);
     }
 
     .content {
-      margin-left: 250px;
-      padding: 1rem;
-      width: calc(100% - 250px);
+      margin-left: 220px;
+      padding: 2rem;
+      width: calc(100% - 220px);
+      transition: all 0.3s ease;
     }
 
     .content iframe {
       width: 100%;
-      height: 100vh; /* Ajusta la altura para ocupar toda la vista */
+      height: calc(100vh - 4rem);
       border: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .content iframe:hover {
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 1rem;
+      }
+
+      .content {
+        margin-left: 0;
+        width: 100%;
+        padding: 1rem;
+      }
+
+      .content iframe {
+        height: calc(100vh - 2rem);
+      }
     }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <h2>Menú</h2>
+    <h2>Dashboard</h2>
     <a href="menu.html">Control de Luz</a>
     <a href="iframe.html">Dashboard</a>
     <a href="ia.html">IA</a>
