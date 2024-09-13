@@ -6,7 +6,7 @@
   <title>Control de Luz con shiftr.io</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    :root {
+          :root {
       --primary-color: #3498db;
       --secondary-color: #2ecc71;
       --background-color: #f5f7fa;
@@ -61,6 +61,19 @@
     .sidebar a:hover {
       background-color: var(--hover-color);
       transform: translateX(5px);
+    }
+    .sidebar select {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 1rem;
+      border-radius: 5px;
+      background-color: var(--sidebar-color);
+      color: #fff;
+      border: 1px solid var(--primary-color);
+    }
+
+    .sidebar select option {
+      background-color: var(--sidebar-color);
     }
 
     .content {
@@ -195,55 +208,170 @@
         font-size: 2rem;
       }
     }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      border-radius: 10px;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    #addMenuBtn, #addLightBtn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #addMenuBtn:hover, #addLightBtn:hover {
+      background-color: #2980b9;
+    }
+    #addLightBtn {
+      display: block;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      color: white;
+      font-size: 24px;
+      border: none;
+      cursor: pointer;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    #addLightBtn:hover {
+      background-color: #2980b9;
+      transform: scale(1.1);
+    }
+
+    .modal-content select,
+    .modal-content input,
+    .modal-content button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .modal-content button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .modal-content button:hover {
+      background-color: #2980b9;
+    }
+    @media (max-width: 768px) {
+      #addLightBtn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        bottom: 10px;
+        right: 10px;
+      }
+    }
+    .delete-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.8em;
+  margin-top: 10px;
+}
+
+.delete-btn:hover {
+  background-color: #c0392b;
+}
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
   <div class="page-container">
-    <div class="sidebar">
+    <div class="sidebar"> 
       <h2>Menú</h2>
-      <a href="menu.html">Control de Luz</a>
-      <a href="iframe.html">Dashboard</a>
-      <a href="ia.html">IA</a>
-      <a href="index.html">Salir</a>
+      <div id="menuItems">
+        <a href="menu.html">Control de Luz</a>
+        <a href="iframe.html">Dashboard</a>
+        <a href="ia.html">IA</a>
+        <a href="index.html">Salir</a>
+      </div>
+      <select id="userInterfaces" aria-label="Interfaces de luz del usuario">
+        <option value="">Seleccionar interfaz</option>
+      </select>
     </div>
 
     <div class="content">
       <h1>Control de Luz</h1>
 
-      <div class="rooms-container">
-        <div class="room">
-          <h2>Habitación 1</h2>
-          <button class="room-btn" id="encenderBtn">Encender Luz</button>
-          <button class="room-btn" id="apagarBtn">Apagar Luz</button>
-          <div id="estadoLuzHabitacion1" class="estado-luz"></div>
-        </div>
-
-        <div class="room">
-          <h2>Habitación 2</h2>
-          <button class="room-btn" id="encenderAzulBtn">Encender LED Azul</button>
-          <button class="room-btn" id="apagarAzulBtn">Apagar LED Azul</button>
-          <div id="estadoLuzHabitacion2" class="estado-luz"></div>
-        </div>
-
-        <div class="room">
-          <h2>Habitación 3</h2>
-          <button class="room-btn" id="encenderRojoBtn">Encender LED Rojo</button>
-          <button class="room-btn" id="apagarRojoBtn">Apagar LED Rojo</button>
-          <div id="estadoLuzHabitacion3" class="estado-luz"></div>
-        </div>
-
-        <div class="room">
-          <h2>Control de LED Rojo - Brillo PWM</h2>
-          <div class="slider-container">
-            <input type="range" min="0" max="1023" value="0" class="slider" id="pwmSlider">
-            <p>Brillo: <span id="pwmValue">0</span></p>
-          </div>
-          <div id="estadoLuzLedRojo" class="estado-luz"></div>
-        </div>
+      <div class="rooms-container" id="roomsContainer">
+        <!-- Las habitaciones existentes se mantendrán aquí -->
       </div>
 
       <p id="estado">Estado: Desconectado</p>
+    </div>
+  </div>
+
+  <button id="addLightBtn" aria-label="Agregar Luz">+</button>
+
+  <!-- Modal para agregar luz -->
+  <div id="addLightModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Agregar Nueva Luz</h2>
+      <select id="lightType">
+        <option value="simple">Luz Simple (On/Off)</option>
+        <option value="control">Luz con Control PWM</option>
+      </select>
+      <input type="text" id="lightName" placeholder="Nombre de la luz">
+      <select id="lightTopic">
+        <option value="casa/luz">casa/luz</option>
+        <option value="casa/ledazul">casa/ledazul</option>
+        <option value="casa/ledrojo">casa/ledrojo</option>
+        <option value="casa/ledrojo/pwm">casa/ledrojo/pwm</option>
+      </select>
+      <button id="saveNewLight">Guardar</button>
     </div>
   </div>
 
@@ -260,18 +388,11 @@
 
     // Elementos del DOM
     const estado = document.getElementById('estado');
-    const encenderBtn = document.getElementById('encenderBtn');
-    const apagarBtn = document.getElementById('apagarBtn');
-    const encenderAzulBtn = document.getElementById('encenderAzulBtn');
-    const apagarAzulBtn = document.getElementById('apagarAzulBtn');
-    const encenderRojoBtn = document.getElementById('encenderRojoBtn');
-    const apagarRojoBtn = document.getElementById('apagarRojoBtn');
-    const pwmSlider = document.getElementById('pwmSlider');
-    const pwmValue = document.getElementById('pwmValue');
-    const estadoLuzHabitacion1 = document.getElementById('estadoLuzHabitacion1');
-    const estadoLuzHabitacion2 = document.getElementById('estadoLuzHabitacion2');
-    const estadoLuzHabitacion3 = document.getElementById('estadoLuzHabitacion3');
-    const estadoLuzLedRojo = document.getElementById('estadoLuzLedRojo');
+    const roomsContainer = document.getElementById('roomsContainer');
+    const addLightBtn = document.getElementById('addLightBtn');
+    const addLightModal = document.getElementById('addLightModal');
+    const saveNewLight = document.getElementById('saveNewLight');
+    const userInterfaces = document.getElementById('userInterfaces');
 
     // Eventos de conexión
     client.on('connect', () => {
@@ -306,47 +427,211 @@
       elemento.style.boxShadow = 'none';
     }
 
-    // Acciones de los botones
-    encenderBtn.addEventListener('click', () => {
-      enviarMensaje('casa/luz', 'on');
-      encenderLuz(estadoLuzHabitacion1);
-    });
+    // Función para abrir modal
+    function openModal(modal) {
+      modal.style.display = "block";
+    }
 
-    apagarBtn.addEventListener('click', () => {
-      enviarMensaje('casa/luz', 'off');
-      apagarLuz(estadoLuzHabitacion1);
-    });
+    // Función para cerrar modal
+    function closeModal(modal) {
+      modal.style.display = "none";
+    }
 
-    encenderAzulBtn.addEventListener('click', () => {
-      enviarMensaje('casa/ledazul', 'on');
-      encenderLuz(estadoLuzHabitacion2);
-    });
+    // Event listener para abrir modal
+    addLightBtn.onclick = () => openModal(addLightModal);
 
-    apagarAzulBtn.addEventListener('click', () => {
-      enviarMensaje('casa/ledazul', 'off');
-      apagarLuz(estadoLuzHabitacion2);
-    });
+    // Event listener para cerrar modal
+    document.querySelector('.close').onclick = () => closeModal(addLightModal);
 
-    encenderRojoBtn.addEventListener('click', () => {
-      enviarMensaje('casa/ledrojo', 'on');
-      encenderLuz(estadoLuzHabitacion3);
+    // Función para cargar las interfaces del usuario
+  async function loadUserInterfaces() {
+  try {
+    const response = await fetch('/api/user-interfaces');
+    if (!response.ok) {
+      throw new Error('Error al cargar las interfaces del usuario');
+    }
+    const interfaces = await response.json();
+    userInterfaces.innerHTML = '<option value="">Seleccionar interfaz</option>';
+    interfaces.forEach(interface => {
+      const option = document.createElement('option');
+      option.value = interface.id;
+      option.textContent = interface.nombre;
+      userInterfaces.appendChild(option);
     });
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al cargar las interfaces del usuario');
+  }
+}
 
-    apagarRojoBtn.addEventListener('click', () => {
-      enviarMensaje('casa/ledrojo', 'off');
-      apagarLuz(estadoLuzHabitacion3);
+    // Cargar las interfaces del usuario al iniciar la página
+    loadUserInterfaces(); 
+
+    // Event listener para el cambio en el select de interfaces
+   // Función para cargar todas las interfaces
+   async function loadAllInterfaces() {
+  try {
+    const response = await fetch('/api/user-interfaces');
+    if (!response.ok) {
+      throw new Error('Error al cargar las interfaces del usuario');
+    }
+    const interfaces = await response.json();
+    
+    // Limpiar el contenedor de habitaciones
+    roomsContainer.innerHTML = '';
+
+    // Crear elementos para cada interfaz
+    interfaces.forEach(interfaceDetails => {
+      const newRoom = document.createElement('div');
+      newRoom.className = 'room';
+      newRoom.dataset.id = interfaceDetails.id;
+      newRoom.innerHTML = `
+        <h2>${interfaceDetails.nombre}</h2>
+        ${interfaceDetails.tipo === 'simple' ? `
+          <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'on')">Encender</button>
+          <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'off')">Apagar</button>
+        ` : `
+          <div class="slider-container">
+            <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${interfaceDetails.lucesid}', this.value)">
+            <p>Brillo: <span>0</span></p>
+          </div>
+        `}
+        <div class="estado-luz"></div>
+        <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
+      `;
+      roomsContainer.appendChild(newRoom);
     });
+  } catch (error) {
+    console.error('Error:', error);
+    alert('Error al cargar las interfaces del usuario');
+  }
+}
 
-    pwmSlider.addEventListener('input', () => {
-      const value = pwmSlider.value;
-      pwmValue.textContent = value;
-      enviarMensaje('casa/ledrojo/pwm', value);
-      if (value > 0) {
-        encenderLuz(estadoLuzLedRojo);
-      } else {
-        apagarLuz(estadoLuzLedRojo);
+// Función para eliminar una interfaz
+async function deleteInterface(id) {
+  if (confirm('¿Estás seguro de que quieres eliminar esta interfaz?')) {
+    try {
+      const response = await fetch(`/api/user-interfaces/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error('Error al eliminar la interfaz');
       }
-    });
+      // Eliminar la interfaz de la UI
+      const interfaceElement = document.querySelector(`.room[data-id="${id}"]`);
+      if (interfaceElement) {
+        interfaceElement.remove();
+      }
+      // Recargar las opciones del select
+      loadUserInterfaces();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar la interfaz');
+    }
+  }
+}
+userInterfaces.addEventListener('change', async (event) => {
+  const selectedId = event.target.value;
+  if (selectedId) {
+    try {
+      const response = await fetch(`/api/user-interfaces/${selectedId}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar los detalles de la interfaz');
+      }
+      const interfaceDetails = await response.json();
+      
+      // Limpiar el contenedor de habitaciones
+      roomsContainer.innerHTML = '';
+
+      // Crear el elemento de la luz seleccionada
+      const newRoom = document.createElement('div');
+      newRoom.className = 'room';
+      newRoom.dataset.id = interfaceDetails.id;
+      newRoom.innerHTML = `
+        <h2>${interfaceDetails.nombre}</h2>
+        ${interfaceDetails.tipo === 'simple' ? `
+          <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'on')">Encender</button>
+          <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'off')">Apagar</button>
+        ` : `
+          <div class="slider-container">
+            <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${interfaceDetails.lucesid}', this.value)">
+            <p>Brillo: <span>0</span></p>
+          </div>
+        `}
+        <div class="estado-luz"></div>
+        <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
+      `;
+      roomsContainer.appendChild(newRoom);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al cargar los detalles de la interfaz');
+    }
+  } else {
+    // Si no se selecciona ninguna interfaz, mostrar todas las interfaces
+    loadAllInterfaces();
+  }
+});
+// Cargar todas las interfaces al iniciar la página
+loadAllInterfaces();
+
+    // Modificar la función para guardar nueva luz
+    saveNewLight.onclick = async () => {
+      const type = document.getElementById('lightType').value;
+      const name = document.getElementById('lightName').value;
+      const topic = document.getElementById('lightTopic').value;
+      if (name && topic) {
+        // Crear el objeto de luz
+        const newLight = {
+          nombre: name,
+          lucesid: topic,
+          tipo: type,
+          id_usuario: 1 // Asumimos que el ID del usuario es 1 por ahora
+        };
+
+        try {
+          // Llamada a la API para insertar en la base de datos
+          const response = await fetch('/api/lights', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newLight),
+          });
+
+          if (!response.ok) {
+            throw new Error('Error al guardar la luz en la base de datos');
+          }
+
+          const result = await response.json();
+          console.log('Luz guardada en la base de datos:', result);
+
+          // Crear el elemento de la nueva luz en la interfaz
+          const newRoom = document.createElement('div');
+          newRoom.className = 'room';
+          newRoom.innerHTML = `
+            <h2>${name}</h2>
+            ${type === 'simple' ? `
+              <button class="room-btn" onclick="enviarMensaje('${topic}', 'on')">Encender</button>
+              <button class="room-btn" onclick="enviarMensaje('${topic}', 'off')">Apagar</button>
+            ` : `
+              <div class="slider-container">
+                <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${topic}', this.value)">
+                <p>Brillo: <span>0</span></p>
+              </div>
+            `}
+            <div class="estado-luz"></div>
+          `;
+          roomsContainer.appendChild(newRoom);
+          closeModal(addLightModal);
+
+          // Recargar las interfaces del usuario
+          loadUserInterfaces();
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Hubo un error al guardar la luz. Por favor, intenta de nuevo.');
+        }
+      }
+    };
   </script>
 </body>
 </html>
