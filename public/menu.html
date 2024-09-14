@@ -473,40 +473,72 @@
   try {
     const response = await fetch('/api/user-interfaces');
     if (!response.ok) {
-      throw new Error('Error al cargar las interfaces del usuario');
+      throw new Error(`Error al cargar las interfaces del usuario: ${response.status} ${response.statusText}`);
     }
     const interfaces = await response.json();
+    console.log('Interfaces cargadas:', interfaces);
+    
+    if (interfaces.length === 0) {
+      roomsContainer.innerHTML = '<p>No hay interfaces disponibles.</p>';
+      return;
+    }
     
     // Limpiar el contenedor de habitaciones
     roomsContainer.innerHTML = '';
 
     // Crear elementos para cada interfaz
     interfaces.forEach(interfaceDetails => {
+      console.log('Procesando interfaz:', interfaceDetails);
       const newRoom = document.createElement('div');
       newRoom.className = 'room';
       newRoom.dataset.id = interfaceDetails.id;
+      
+      // Manejar casos donde lucesid o tipo puedan estar ausentes
+      const lucesid = interfaceDetails.lucesid || 'default/topic';
+      const tipo = interfaceDetails.tipo || 'desconocido';
+      
       newRoom.innerHTML = `
         <h2>${interfaceDetails.nombre}</h2>
-        ${interfaceDetails.tipo === 'simple' ? `
-          <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'on')">Encender</button>
-          <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'off')">Apagar</button>
-        ` : `
+        ${tipo === 'simple' ? `
+          <button class="room-btn" onclick="enviarMensaje('${lucesid}', 'on')">Encender</button>
+          <button class="room-btn" onclick="enviarMensaje('${lucesid}', 'off')">Apagar</button>
+        ` : tipo === 'control' ? `
           <div class="slider-container">
-            <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${interfaceDetails.lucesid}', this.value)">
+            <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${lucesid}', this.value)">
             <p>Brillo: <span>0</span></p>
           </div>
+        ` : `
+          <p>Tipo de interfaz no reconocido o faltante: ${tipo}</p>
         `}
         <div class="estado-luz"></div>
         <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
       `;
       roomsContainer.appendChild(newRoom);
     });
+
+    // Actualizar el select de interfaces
+    updateInterfaceSelect(interfaces);
   } catch (error) {
     console.error('Error:', error);
-    alert('Error al cargar las interfaces del usuario');
+    alert('Error al cargar las interfaces del usuario: ' + error.message);
   }
 }
 
+// Función para actualizar el select de interfaces
+function updateInterfaceSelect(interfaces) {
+  userInterfaces.innerHTML = '<option value="">Seleccionar interfaz</option>';
+  interfaces.forEach(interface => {
+    const option = document.createElement('option');
+    option.value = interface.id;
+    option.textContent = interface.nombre;
+    userInterfaces.appendChild(option);
+  });
+}
+
+// Asegúrate de que esta función se llame cuando la página se carga
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllInterfaces();
+});
 // Función para eliminar una interfaz
 async function deleteInterface(id) {
   if (confirm('¿Estás seguro de que quieres eliminar esta interfaz?')) {
@@ -514,22 +546,37 @@ async function deleteInterface(id) {
       const response = await fetch(`/api/user-interfaces/${id}`, {
         method: 'DELETE',
       });
+      
       if (!response.ok) {
-        throw new Error('Error al eliminar la interfaz');
+        let errorMessage = 'Error al eliminar la interfaz';
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } else {
+          errorMessage = await response.text();
+        }
+        throw new Error(errorMessage);
       }
+
       // Eliminar la interfaz de la UI
       const interfaceElement = document.querySelector(`.room[data-id="${id}"]`);
       if (interfaceElement) {
         interfaceElement.remove();
       }
-      // Recargar las opciones del select
-      loadUserInterfaces();
+      
+      // Recargar todas las interfaces
+      await loadAllInterfaces();
+      
+      alert('Interfaz eliminada con éxito');
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al eliminar la interfaz');
+      alert(error.message);
     }
   }
 }
+
+
 userInterfaces.addEventListener('change', async (event) => {
   const selectedId = event.target.value;
   if (selectedId) {
@@ -552,11 +599,13 @@ userInterfaces.addEventListener('change', async (event) => {
         ${interfaceDetails.tipo === 'simple' ? `
           <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'on')">Encender</button>
           <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'off')">Apagar</button>
-        ` : `
+        ` : interfaceDetails.tipo === 'control' ? `
           <div class="slider-container">
             <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${interfaceDetails.lucesid}', this.value)">
             <p>Brillo: <span>0</span></p>
           </div>
+        ` : `
+          <p>Tipo de interfaz no reconocido: ${interfaceDetails.tipo}</p>
         `}
         <div class="estado-luz"></div>
         <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
@@ -573,65 +622,68 @@ userInterfaces.addEventListener('change', async (event) => {
 });
 // Cargar todas las interfaces al iniciar la página
 loadAllInterfaces();
+document.addEventListener('DOMContentLoaded', loadAllInterfaces);
 
-    // Modificar la función para guardar nueva luz
-    saveNewLight.onclick = async () => {
-      const type = document.getElementById('lightType').value;
-      const name = document.getElementById('lightName').value;
-      const topic = document.getElementById('lightTopic').value;
-      if (name && topic) {
-        // Crear el objeto de luz
-        const newLight = {
-          nombre: name,
-          lucesid: topic,
-          tipo: type,
-          id_usuario: 1 // Asumimos que el ID del usuario es 1 por ahora
-        };
-
-        try {
-          // Llamada a la API para insertar en la base de datos
-          const response = await fetch('/api/lights', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newLight),
-          });
-
-          if (!response.ok) {
-            throw new Error('Error al guardar la luz en la base de datos');
-          }
-
-          const result = await response.json();
-          console.log('Luz guardada en la base de datos:', result);
-
-          // Crear el elemento de la nueva luz en la interfaz
-          const newRoom = document.createElement('div');
-          newRoom.className = 'room';
-          newRoom.innerHTML = `
-            <h2>${name}</h2>
-            ${type === 'simple' ? `
-              <button class="room-btn" onclick="enviarMensaje('${topic}', 'on')">Encender</button>
-              <button class="room-btn" onclick="enviarMensaje('${topic}', 'off')">Apagar</button>
-            ` : `
-              <div class="slider-container">
-                <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${topic}', this.value)">
-                <p>Brillo: <span>0</span></p>
-              </div>
-            `}
-            <div class="estado-luz"></div>
-          `;
-          roomsContainer.appendChild(newRoom);
-          closeModal(addLightModal);
-
-          // Recargar las interfaces del usuario
-          loadUserInterfaces();
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Hubo un error al guardar la luz. Por favor, intenta de nuevo.');
-        }
-      }
+// Llamar a loadAllInterfaces cuando se guarda una nueva luz
+saveNewLight.onclick = async () => {
+  const type = document.getElementById('lightType').value;
+  const name = document.getElementById('lightName').value;
+  const topic = document.getElementById('lightTopic').value;
+  if (name && topic) {
+    const newLight = {
+      nombre: name,
+      lucesid: topic,
+      tipo: type,
+      id_usuario: 1 // Asumimos que el ID del usuario es 1 por ahora
     };
+
+    try {
+      const response = await fetch('/api/lights', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newLight),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al guardar la luz en la base de datos');
+      }
+
+      const result = await response.json();
+      console.log('Luz guardada en la base de datos:', result);
+
+      // Cerrar el modal
+      closeModal(addLightModal);
+
+      // Recargar todas las interfaces para mostrar la nueva luz
+      loadAllInterfaces();
+
+      // Limpiar los campos del formulario
+      document.getElementById('lightName').value = '';
+      document.getElementById('lightTopic').value = '';
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Hubo un error al guardar la luz. Por favor, intenta de nuevo.');
+    }
+  }
+};
+// Añade esto al final de tu script
+// Cargar todas las interfaces al iniciar la página
+
+  // ... (código existente para guardar una nueva luz)
+
+  // Después de guardar exitosamente:
+ // Cargar todas las interfaces al iniciar la página
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllInterfaces();
+  loadUserInterfaces();
+});
+window.addEventListener('error', function(event) {
+  console.error('Error no manejado:', event.error);
+  alert('Ha ocurrido un error inesperado. Por favor, recarga la página e intenta de nuevo.');
+});
+
   </script>
 </body>
 </html>
