@@ -338,7 +338,7 @@
         <a href="index.html">Salir</a>
       </div>
       <select id="userInterfaces" aria-label="Interfaces de luz del usuario">
-        <option value="">Seleccionar interfaz</option>
+        <option value="">Todas las interfaz</option>
       </select>
     </div>
 
@@ -451,7 +451,7 @@
       throw new Error('Error al cargar las interfaces del usuario');
     }
     const interfaces = await response.json();
-    userInterfaces.innerHTML = '<option value="">Seleccionar interfaz</option>';
+    userInterfaces.innerHTML = '<option value="">Todas las interfaz</option>';
     interfaces.forEach(interface => {
       const option = document.createElement('option');
       option.value = interface.id;
@@ -477,12 +477,12 @@
     }
     const interfaces = await response.json();
     console.log('Interfaces cargadas:', interfaces);
-    
+
     if (interfaces.length === 0) {
       roomsContainer.innerHTML = '<p>No hay interfaces disponibles.</p>';
       return;
     }
-    
+
     // Limpiar el contenedor de habitaciones
     roomsContainer.innerHTML = '';
 
@@ -492,11 +492,11 @@
       const newRoom = document.createElement('div');
       newRoom.className = 'room';
       newRoom.dataset.id = interfaceDetails.id;
-      
+
       // Manejar casos donde lucesid o tipo puedan estar ausentes
       const lucesid = interfaceDetails.lucesid || 'default/topic';
       const tipo = interfaceDetails.tipo || 'desconocido';
-      
+
       newRoom.innerHTML = `
         <h2>${interfaceDetails.nombre}</h2>
         ${tipo === 'simple' ? `
@@ -523,15 +523,22 @@
     alert('Error al cargar las interfaces del usuario: ' + error.message);
   }
 }
-
-// Función para actualizar el select de interfaces
 function updateInterfaceSelect(interfaces) {
-  userInterfaces.innerHTML = '<option value="">Seleccionar interfaz</option>';
-  interfaces.forEach(interface => {
+  const selectElement = document.getElementById('interface-select');
+  if (!selectElement) {
+    console.error('Elemento select no encontrado.');
+    return;
+  }
+  
+  // Limpia las opciones existentes
+  selectElement.innerHTML = '';
+  
+  // Añade una opción para cada interfaz
+  interfaces.forEach(interfaceDetails => {
     const option = document.createElement('option');
-    option.value = interface.id;
-    option.textContent = interface.nombre;
-    userInterfaces.appendChild(option);
+    option.value = interfaceDetails.id;
+    option.textContent = interfaceDetails.nombre;
+    selectElement.appendChild(option);
   });
 }
 

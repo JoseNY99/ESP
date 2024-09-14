@@ -11,26 +11,13 @@ const dbConfig = {
 async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      console.log('Iniciando conexión a la base de datos...');
       const connection = await mysql.createConnection(dbConfig);
-      console.log('Conexión establecida exitosamente.');
-      
       const query = 'SELECT id, nombre, lucesid, tipo FROM interfaces WHERE id_usuario = ?';
-      const values = [1]; // Asumimos que el ID del usuario es 1 por ahora
-      
-      console.log('Ejecutando query:', query);
-      console.log('Con valores:', values);
+      const values = [1]; // Ajusta el ID del usuario según sea necesario
       
       const [rows] = await connection.execute(query, values);
       
-      console.log('Query ejecutada. Número de filas devueltas:', rows.length);
-      console.log('Primera fila de resultados:', rows[0]);
-      console.log('Todos los resultados:', JSON.stringify(rows, null, 2));
-
       await connection.end();
-      console.log('Conexión a la base de datos cerrada.');
-
-      console.log('Datos enviados desde la API:', rows);
 
       res.status(200).json(rows);
     } catch (err) {
