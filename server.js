@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const mysql = require('mysql2/promise');
+const routes = require('./routes');
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -17,7 +18,7 @@ const dbConfig = {
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
-
+app.use('/api', routes);
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
