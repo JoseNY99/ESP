@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const mysql = require('mysql2/promise');
 const routes = require('./routes');
+const userInterfacesHandler = require('./api/user-interfaces/[id]');
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -19,6 +20,7 @@ const dbConfig = {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 app.use('/api', routes);
+app.get('/api/user-interfaces', userInterfacesHandler);
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
