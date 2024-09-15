@@ -13,7 +13,7 @@ async function handler(req, res) {
     try {
       const connection = await mysql.createConnection(dbConfig);
       const query = 'SELECT id, nombre, lucesid, tipo FROM interfaces WHERE id_usuario = ?';
-      const values = [1]; // Ajusta el ID del usuario según sea necesario
+      const values = [req.session.userId];
       
       const [rows] = await connection.execute(query, values);
       

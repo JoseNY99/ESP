@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const mysql = require('mysql2/promise');
+const session = require('express-session'); // Added this line
 const routes = require('./routes');
 const userInterfacesHandler = require('./api/user-interfaces/[id]');
 
@@ -19,11 +20,28 @@ const dbConfig = {
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
+app.use(session({
+  secret: 'tu_secreto_aqui',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Cambia a true si usas HTTPS
+}));
 app.use('/api', routes);
 app.get('/api/user-interfaces', userInterfacesHandler);
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+app.get('/api/check-auth', (req, res) => {
+  if (req.session.userId) {
+    // User is authenticated
+    res.json({ authenticated: true, userId: req.session.userId });
+  } else {
+    // User is not authenticated
+    res.status(401).json({ authenticated: false });
+  }
 });
 
 // Login route
@@ -39,7 +57,8 @@ app.post('/login', async (req, res) => {
     await connection.end();
 
     if (results.length > 0) {
-      res.json({ success: true });
+      req.session.userId = results[0].id; // Set the user ID in the session
+      res.json({ success: true, userId: results[0].id });
     } else {
       res.json({ success: false, message: 'Usuario o contraseña incorrectos' });
     }
@@ -70,11 +89,15 @@ app.post('/api/lights', async (req, res) => {
 
 // User Interfaces API route
 app.get('/api/user-interfaces', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  
   try {
     const connection = await mysql.createConnection(dbConfig);
     const [rows] = await connection.execute(
       'SELECT id, nombre FROM interfaces WHERE id_usuario = ?',
-      [1] // Assuming user ID is 1 for now
+      [req.session.userId]
     );
     await connection.end();
 
@@ -87,13 +110,17 @@ app.get('/api/user-interfaces', async (req, res) => {
 
 // User Interface Details API route
 app.get('/api/user-interfaces/:id', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
   const { id } = req.params;
 
   try {
     const connection = await mysql.createConnection(dbConfig);
     const [rows] = await connection.execute(
       'SELECT * FROM interfaces WHERE id = ? AND id_usuario = ?',
-      [id, 1] // Assuming user ID is 1 for now
+      [id, req.session.userId]
     );
     await connection.end();
 
