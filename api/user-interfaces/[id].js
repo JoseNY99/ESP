@@ -8,7 +8,7 @@ const dbConfig = {
 };
 
 async function handler(req, res) {
-  const { id } = req.params; // Usa req.params para obtener el id de la URL
+  const { id } = req.params;
 
   if (req.method === 'DELETE') {
     try {
@@ -16,7 +16,7 @@ async function handler(req, res) {
       
       const [result] = await connection.execute(
         'DELETE FROM interfaces WHERE id = ? AND id_usuario = ?',
-        [id, 1] // Asumiendo que el ID del usuario es 1
+        [id, req.session.userId]
       );
 
       await connection.end();
