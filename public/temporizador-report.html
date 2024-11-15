@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reporte de Temporizador</title>
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -42,6 +43,7 @@
       border-radius: 4px;
       cursor: pointer;
       font-size: 16px;
+      margin-right: 10px;
     }
     button:hover {
       background-color: #2980b9;
@@ -51,19 +53,19 @@
       text-align: center;
       margin-top: 20px;
     }
-    #debugInfo {
-      margin-top: 20px;
-      padding: 10px;
-      background-color: #f8f8f8;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
   <h1>Reporte de Temporizador</h1>
-  <button id="exportBtn" style="display: none;">Exportar a CSV</button>
-  <button id="testApiBtn">Probar API</button>
+  <div class="button-container">
+    <button id="exportBtn" style="display: none;">Exportar a Excel</button>
+    <button id="backBtn">Volver al Menú</button>
+  </div>
   <table>
     <thead>
       <tr>
@@ -80,7 +82,6 @@
     </tbody>
   </table>
   <div id="errorMessage"></div>
-  <div id="debugInfo"></div>
 
   <script>
     async function fetchData(url = '/api/temporizador-report') {
@@ -88,13 +89,6 @@
         const response = await fetch(url, {
           credentials: 'include'
         });
-        
-        document.getElementById('debugInfo').innerHTML = `
-          URL: ${url}<br>
-          Status: ${response.status}<br>
-          Status Text: ${response.statusText}<br>
-          Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}
-        `;
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -126,18 +120,20 @@
       });
     }
 
-    function exportToCSV(data) {
-      const csvContent = "data:text/csv;charset=utf-8," 
-        + "ID,LED,Fecha,Hora,Acción,ID Usuario\n"
-        + data.map(row => Object.values(row).join(",")).join("\n");
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "reporte_temporizador.csv");
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    function exportToExcel(data) {
+      const worksheet = XLSX.utils.json_to_sheet(data.map(row => ({
+        ID: row.id,
+        LED: row.led,
+        Fecha: row.fecha,
+        Hora: row.hora,
+        Acción: row.accion,
+        'ID Usuario': row.id_usuario
+      })));
+      
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Reporte de Temporizador");
+      
+      XLSX.writeFile(workbook, "reporte_temporizador.xlsx");
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
@@ -147,15 +143,12 @@
         document.getElementById('exportBtn').style.display = 'block';
         
         document.getElementById('exportBtn').addEventListener('click', () => {
-          exportToCSV(data);
+          exportToExcel(data);
         });
       }
 
-      document.getElementById('testApiBtn').addEventListener('click', async () => {
-        const testData = await fetchData('/api/test');
-        if (testData) {
-          alert(JSON.stringify(testData));
-        }
+      document.getElementById('backBtn').addEventListener('click', () => {
+        window.location.href = 'menu.html';
       });
     });
   </script>
