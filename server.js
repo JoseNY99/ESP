@@ -2,12 +2,13 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const mysql = require('mysql2/promise');
-const session = require('express-session'); // Added this line
+const session = require('express-session');
 const routes = require('./routes');
+const temporizadorreportHandler = require('./api/temporizador-report');
 const userInterfacesHandler = require('./api/user-interfaces/[id]');
 
 const app = express();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 4099;
 
 // Database connection configuration
 const dbConfig = {
@@ -27,11 +28,60 @@ app.use(session({
   cookie: { secure: false } // Cambia a true si usas HTTPS
 }));
 app.use('/api', routes);
+app.use('/', routes);
+app.use('/api', temporizadorreportHandler);
 app.get('/api/user-interfaces', userInterfacesHandler);
 
 // Routes
+app.get('/api/user', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.execute(
+      'SELECT email, nombre, apellido, nombre_usuario FROM usuario WHERE id = ?',
+      [req.session.userId]
+    );
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.status(200).json(rows[0]);
+    } else {
+      res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+  } catch (err) {
+    console.error('Error al obtener los datos del usuario:', err);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+app.post('/api/sensor-data', async (req, res) => {
+  const { sensor_type, value } = req.body;
+
+  if (!sensor_type || value === undefined) {
+    return res.status(400).json({ error: 'Sensor type and value are required' });
+  }
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    
+    const [result] = await connection.execute(
+      'INSERT INTO sensor_data (sensor_type, value) VALUES (?, ?)',
+      [sensor_type, value]
+    );
+
+    await connection.end();
+
+    res.status(201).json({ message: 'Sensor data stored successfully', id: result.insertId });
+  } catch (err) {
+    console.error('Error storing sensor data:', err);
+    res.status(500).json({ error: 'Error storing sensor data' });
+  }
 });
 
 app.get('/api/check-auth', (req, res) => {
@@ -132,6 +182,106 @@ app.get('/api/user-interfaces/:id', async (req, res) => {
   } catch (err) {
     console.error('Error al obtener los detalles de la interfaz:', err);
     res.status(500).json({ error: 'Error al obtener los detalles de la interfaz' });
+  }
+});
+// Ruta para obtener los datos del usuario para la página de ajustes
+app.get('/api/user-settings', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.execute(
+      'SELECT nombre_usuario, email, nombre, apellido FROM usuario WHERE id = ?',
+      [req.session.userId]
+    );
+    await connection.end();
+
+    if (rows.length > 0) {
+      res.status(200).json(rows[0]);
+    } else {
+      res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+  } catch (err) {
+    console.error('Error al obtener los ajustes del usuario:', err);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+// Ruta para cambiar la contraseña
+app.post('/api/change-password', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  const { newPassword } = req.body;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    await connection.execute(
+      'UPDATE usuario SET contrasena = ? WHERE id = ?',
+      [newPassword, req.session.userId]
+    );
+    await connection.end();
+
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Error al actualizar la contraseña:', err);
+    res.status(500).json({ error: 'Error en el servidor' });
+  }
+});
+
+// Ruta para cerrar sesión
+app.post('/api/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).json({ error: 'No se pudo cerrar sesión' });
+    }
+    res.status(200).json({ success: true });
+  });
+});
+
+// New route: Add Timer
+app.post('/api/add-timer', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  const { led, fecha, hora, accion } = req.body;
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const [result] = await connection.execute(
+      'INSERT INTO temporizador (led, fecha, hora, accion, estado, id_usuario) VALUES (?, ?, ?, ?, TRUE, ?)',
+      [led, fecha, hora, accion, req.session.userId]
+    );
+    await connection.end();
+
+    res.status(200).json({ id: result.insertId, led, fecha, hora, accion, estado: true });
+  } catch (err) {
+    console.error('Error al insertar el temporizador:', err);
+    res.status(500).json({ error: 'Error al insertar el temporizador' });
+  }
+});
+
+// New route: Get Timers
+app.get('/api/get-timers', async (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  try {
+    const connection = await mysql.createConnection(dbConfig);
+    const [rows] = await connection.execute(
+      'SELECT * FROM temporizador WHERE id_usuario = ? AND fecha >= CURDATE() ORDER BY fecha, hora',
+      [req.session.userId]
+    );
+    await connection.end();
+
+    res.status(200).json(rows);
+  } catch (err) {
+    console.error('Error al obtener los temporizadores:', err);
+    res.status(500).json({ error: 'Error al obtener los temporizadores' });
   }
 });
 

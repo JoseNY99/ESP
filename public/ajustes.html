@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajustes de Usuario</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --background-color: #f5f7fa;
+      --text-color: #34495e;
+      --sidebar-color: #2c3e50;
+      --hover-color: #3498db;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      overflow-x: hidden;
+    }
+
+    .page-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: var(--sidebar-color);
+      color: #fff;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar h2 {
+      margin-top: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
+    }
+
+    .sidebar a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      padding: 0.8rem 1rem;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar a:hover {
+      background-color: var(--hover-color);
+      transform: translateX(5px);
+    }
+
+    .content {
+      flex-grow: 1;
+      padding: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .settings-container {
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .user-data {
+      margin-bottom: 2rem;
+    }
+
+    .user-data h2 {
+      color: var(--primary-color);
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      text-align: center;
+    }
+
+    .user-data-field {
+      display: flex;
+      margin-bottom: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .user-data-label {
+      width: 150px;
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+
+    .user-data-value {
+      flex: 1;
+      color: var(--text-color);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    input {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.8rem 0;
+      border: none;
+      border-radius: 5px;
+      background-color: var(--primary-color);
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 1rem;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+      transform: translateY(-2px);
+    }
+
+    #logoutBtn {
+      background-color: #e74c3c;
+    }
+
+    #logoutBtn:hover {
+      background-color: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <div class="sidebar">
+      <h2>Menú</h2>
+      <div id="menuItems">
+        <a href="menu.html">Control de Luz</a>
+        <a href="iframe.html">Dashboard</a>
+        <a href="Temporizador.html">Temporizador</a>
+        <a href="ia.html">IA</a>
+        <a href="ajustes.html">Ajustes</a>
+        <a href="index.html">Salir</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <h1>Ajustes de Usuario</h1>
+
+      <div class="settings-container">
+        <div id="userData" class="user-data">
+          <h2>Datos del Usuario</h2>
+          <div class="form-group">
+            <label>Nombre de Usuario:</label>
+            <span id="userUsername"></span>
+          </div>
+          <div class="form-group">
+            <label>Nombre:</label>
+            <span id="userName"></span>
+          </div>
+          <div class="form-group">
+            <label>Apellido:</label>
+            <span id="userLastname"></span>
+          </div>
+          <div class="form-group">
+            <label>Correo Electrónico:</label>
+            <span id="userEmail"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newPassword">Nueva Contraseña</label>
+          <input type="password" id="newPassword">
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">Confirmar Contraseña</label>
+          <input type="password" id="confirmPassword">
+        </div>
+        <button id="changePasswordBtn">Cambiar Contraseña</button>
+        <button id="logoutBtn">Cerrar Sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const userDataContainer = document.getElementById('userData');
+    const newPasswordInput = document.getElementById('newPassword');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const changePasswordBtn = document.getElementById('changePasswordBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    async function loadUserData() {
+  try {
+    const response = await fetch('/api/user', {
+      credentials: 'include'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const userData = await response.json();
+    console.log('Datos del usuario recibidos:', userData);
+
+    // Actualizar los elementos del DOM con los datos del usuario
+    document.getElementById('userUsername').textContent = userData.nombre_usuario || 'No disponible';
+    document.getElementById('userName').textContent = userData.nombre || 'No disponible';
+    document.getElementById('userLastname').textContent = userData.apellido || 'No disponible';
+    document.getElementById('userEmail').textContent = userData.email || 'No disponible';
+    
+  } catch (error) {
+    console.error('Error al cargar los datos del usuario:', error);
+    alert('Error al cargar los datos del usuario. Por favor, intenta recargar la página.');
+  }
+}
+    async function checkAuthentication() {
+      try {
+        const response = await fetch('/api/check-auth', {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (!data.authenticated) {
+          window.location.href = '/login.html';
+        } else {
+          loadUserData();
+        }
+      } catch (error) {
+        console.error('Error al verificar la autenticación:', error);
+        window.location.href = '/login.html';
+      }
+    }
+
+    async function changePassword() {
+      const newPassword = newPasswordInput.value;
+      const confirmPassword = confirmPasswordInput.value;
+
+      if (!newPassword || !confirmPassword) {
+        alert('Por favor, completa ambos campos de contraseña');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        alert('Las contraseñas no coinciden');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/change-password', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ contrasenha: newPassword }),
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al cambiar la contraseña');
+        }
+
+        alert('Contraseña cambiada exitosamente');
+        newPasswordInput.value = '';
+        confirmPasswordInput.value = '';
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cambiar la contraseña');
+      }
+    }
+
+    async function logout() {
+      try {
+        const response = await fetch('/api/logout', {
+          method: 'POST',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al cerrar sesión');
+        }
+
+        window.location.href = '/index.html';
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cerrar sesión');
+      }
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', checkAuthentication);
+    changePasswordBtn.addEventListener('click', changePassword);
+    logoutBtn.addEventListener('click', logout);
+  </script>
+</body>
+</html>

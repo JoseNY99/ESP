@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Temporizador de Luz</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #3498db;
+      --secondary-color: #2ecc71;
+      --background-color: #f5f7fa;
+      --text-color: #34495e;
+      --sidebar-color: #2c3e50;
+      --hover-color: #3498db;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      overflow-x: hidden;
+    }
+
+    .page-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 220px;
+      background-color: var(--sidebar-color);
+      color: #fff;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar h2 {
+      margin-top: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--primary-color);
+    }
+
+    .sidebar a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      padding: 0.8rem 1rem;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar a:hover {
+      background-color: var(--hover-color);
+      transform: translateX(5px);
+    }
+
+    .content {
+      flex-grow: 1;
+      padding: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .timer-form {
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    input[type="date"],
+    input[type="time"] {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7em top 50%;
+      background-size: 1em auto;
+      padding-right: 1.5em;
+    }
+
+    .date-time-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 1rem;
+      background-color: var(--primary-color);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #2980b9;
+    }
+
+    #estado {
+      text-align: center;
+      font-weight: bold;
+      margin-top: 2rem;
+    }
+
+    #timerList {
+      margin-top: 2rem;
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .timer-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+    }
+
+    .timer-item:last-child {
+      border-bottom: none;
+    }
+
+    @media (max-width: 768px) {
+      .page-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 1rem;
+      }
+
+      .content {
+        padding: 1rem;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+  <div class="page-container">
+    <div class="sidebar">
+      <h2>Menú</h2>
+      <nav>
+        <a href="menu.html">Control de Luz</a>
+        <a href="iframe.html">Dashboard</a>
+        <a href="Temporizador.html">Temporizador</a>
+        <a href="ia.html">IA</a>
+        <a href="ajustes.html">Ajustes</a>
+        <a href="index.html">Salir</a>
+      </nav>
+    </div>
+
+    <main class="content">
+      <h1>Temporizador de Luz</h1>
+
+      <form class="timer-form" id="timerForm">
+        <div class="form-group">
+          <label for="lightSelect">Seleccionar Luz:</label>
+          <select id="lightSelect" required>
+            <!-- Las opciones se cargarán dinámicamente -->
+          </select>
+        </div>
+        <div class="date-time-group">
+          <div class="form-group">
+            <label for="dateInput">Fecha:</label>
+            <input type="date" id="dateInput" required>
+          </div>
+          <div class="form-group">
+            <label for="timeInput">Hora:</label>
+            <input type="time" id="timeInput" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="action">Acción:</label>
+          <select id="action" required>
+            <option value="Encender">Encender</option>
+            <option value="Apagar">Apagar</option>
+          </select>
+        </div>
+        <button type="submit">Programar Temporizador</button>
+      </form>
+
+      <p id="estado" aria-live="polite">Estado: Desconectado</p>
+
+      <div id="timerList">
+        <!-- Los temporizadores se cargarán aquí dinámicamente -->
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Configuración MQTT
+    const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
+    const mqttOptions = {
+      username: 'crazyjester833',
+      password: 'MOX70ExUuSBpjdQl'
+    };
+
+    // Conectar al broker MQTT
+    const client = mqtt.connect(mqttServer, mqttOptions);
+
+    // Elementos del DOM
+    const estado = document.getElementById('estado');
+    const lightSelect = document.getElementById('lightSelect');
+    const timerForm = document.getElementById('timerForm');
+    const dateInput = document.getElementById('dateInput');
+    const timeInput = document.getElementById('timeInput');
+    const timerList = document.getElementById('timerList');
+
+    // Eventos de conexión
+    client.on('connect', () => {
+      console.log('Conectado a shiftr.io');
+      estado.textContent = 'Estado: Conectado';
+      loadLights();
+      loadTimers();
+    });
+
+    client.on('error', (error) => {
+      console.error('Error de conexión:', error);
+      estado.textContent = 'Estado: Error de conexión';
+    });
+
+    // Función para cargar las luces disponibles
+    async function loadLights() {
+      try {
+        const response = await fetch('/api/user-interfaces', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error('Error al cargar las interfaces del usuario');
+        }
+        const interfaces = await response.json();
+        lightSelect.innerHTML = '';
+        interfaces.forEach(interface => {
+          const option = document.createElement('option');
+          option.value = interface.lucesid;
+          option.textContent = interface.nombre;
+          lightSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar las luces disponibles');
+      }
+    }
+
+    // Función para programar el temporizador
+    async function scheduleTimer(light, date, time, action) {
+      try {
+        const response = await fetch('/api/add-timer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            led: light,
+            fecha: date,
+            hora: time,
+            accion: action
+          }),
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al programar el temporizador');
+        }
+
+        const result = await response.json();
+        console.log('Temporizador programado:', result);
+        alert('Temporizador programado exitosamente');
+        loadTimers();
+
+        // Schedule the MQTT action immediately
+        const scheduledTime = parseDateTime(date, time);
+        const now = new Date();
+        const delay = scheduledTime.getTime() - now.getTime();
+
+        if (delay > 0) {
+          console.log(`Scheduling MQTT action in ${delay} ms`);
+          setTimeout(() => {
+            executeMqttAction(light, action);
+          }, delay);
+        } else {
+          console.log('Scheduled time is in the past, executing MQTT action immediately');
+          executeMqttAction(light, action);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al programar el temporizador');
+      }
+    }
+
+    // Función para parsear la fecha y hora
+    function parseDateTime(dateString, timeString) {
+    console.log('Parsing date and time:', dateString, timeString);
+    let date;
+
+    try {
+        // Intentar crear una fecha directamente en caso de que ya esté en un formato compatible
+        date = new Date(`${dateString}T${timeString}`);
+        if (isNaN(date.getTime())) {
+            throw new Error('Formato no estándar');
+        }
+    } catch {
+        console.log('Formato no estándar, intentando parsear manualmente');
+        try {
+            // Si la fecha incluye 'T', asumimos que es un formato ISO
+            if (dateString.includes('T')) {
+                date = new Date(dateString);
+            } else {
+                // Si no, asumimos que es el formato 'YYYY-MM-DD'
+                const [year, month, day] = dateString.split('-').map(Number);
+                const [hours, minutes] = timeString.split(':').map(Number);
+                date = new Date(year, month - 1, day, hours, minutes);
+            }
+        } catch {
+            console.warn(`No se pudo parsear la fecha: ${dateString} ${timeString}`);
+            return null;
+        }
+    }
+
+    // Verificar si la conversión es válida
+    if (isNaN(date.getTime())) {
+        console.warn(`Fecha inválida: ${dateString} ${timeString}`);
+        return null;
+    }
+
+    return date;
+}
+
+
+    // Función actualizada para mostrar los temporizadores
+    function displayTimers(timers) {
+      timerList.innerHTML = '<h2>Temporizadores programados</h2>';
+      if (!timers || timers.length === 0) {
+        timerList.innerHTML += '<p>No hay temporizadores programados.</p>';
+        return;
+      }
+
+      const now = new Date();
+
+      timers.forEach(timer => {
+        try {
+          let scheduledTime;
+          if (timer.fecha.includes('T')) {
+            // Si la fecha incluye 'T', usamos solo la fecha
+            scheduledTime = parseDateTime(timer.fecha, timer.hora);
+          } else {
+            scheduledTime = parseDateTime(timer.fecha, timer.hora);
+          }
+
+          const timerElement = document.createElement('div');
+          timerElement.className = 'timer-item';
+          const isPast = scheduledTime < now;
+          const isToday = scheduledTime.toDateString() === now.toDateString();
+
+          timerElement.innerHTML = `
+            <div>
+              <strong>${timer.led}</strong> - ${timer.accion}
+              <br>
+              ${scheduledTime.toLocaleString('es-ES', { 
+                dateStyle: 'medium', 
+                timeStyle: 'short' 
+              })}
+              ${isToday ? ' (Hoy)' : ''}
+            </div>
+            <div>
+              ${isPast ? 'Finalizado' : getTimeLeft(scheduledTime)}
+            </div>
+          `;
+          timerList.appendChild(timerElement);
+        } catch (error) {
+          console.error('Error al procesar el temporizador:', error);
+          // Agregar un elemento para mostrar el error en la interfaz
+          const errorElement = document.createElement('div');
+          errorElement.className = 'timer-item error';
+          errorElement.textContent = `Error: ${error.message}`;
+          timerList.appendChild(errorElement);
+        }
+      });
+    }
+
+    // Función mejorada para calcular el tiempo restante
+    function getTimeLeft(scheduledTime) {
+      const now = new Date();
+      const timeLeft = scheduledTime.getTime() - now.getTime();
+
+      if (timeLeft <= 0) {
+        return 'Finalizado';
+      }
+
+      const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    
+    // Función para validar la fecha y hora antes de programar
+    function validateDateTime(date, time) {
+      const scheduledTime = parseDateTime(date, time);
+
+      if (isNaN(scheduledTime.getTime())) {
+        alert('Por favor, ingrese una fecha y hora válidas');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Función para cargar los temporizadores
+    async function loadTimers() {
+      try {
+        const response = await fetch('/api/get-timers', {
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const timers = await response.json();
+        console.log('Timers cargados:', timers); // Para depuración
+        displayTimers(timers);
+      } catch (error) {
+        console.error('Error al cargar los temporizadores:', error);
+        timerList.innerHTML = `<p>Error al cargar los temporizadores: ${error.message}</p>`;
+      }
+    }
+
+    function checkPendingTimers() {
+      const now = new Date();
+      const timers = Array.from(document.querySelectorAll('.timer-item'));
+
+      timers.forEach(timer => {
+        const timeLeftElement = timer.querySelector('div:last-child');
+        const scheduledTimeString = timer.querySelector('div:first-child').textContent.split('\n')[1].trim();
+        const scheduledTime = new Date(scheduledTimeString);
+
+        if (now >= scheduledTime && timeLeftElement.textContent !== 'Finalizado') {
+          const light = timer.querySelector('strong').textContent;
+          const action = timer.textContent.includes('Encender') ? 'on' : 'off';
+
+          console.log(`Executing overdue timer: ${light} - ${action}`);
+          client.publish(light, action, (err) => {
+            if (err) {
+              console.error('Error al enviar mensaje MQTT:', err);
+            } else {
+              console.log(`Acción MQTT ejecutada: ${action} en ${light}`);
+              timeLeftElement.textContent = 'Finalizado';
+            }
+          });
+        }
+      });
+    }
+
+    // Event listener para el formulario
+    timerForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const light = lightSelect.value;
+      const date = dateInput.value;
+      const time = timeInput.value;
+      const action = document.getElementById('action').value;
+
+      if (validateDateTime(date, time)) {
+        scheduleTimer(light, date, time, action);
+      }
+    });
+
+    // Función para ejecutar la acción MQTT
+    function executeMqttAction(light, action) {
+      const mqttAction = action === 'Encender' ? 'on' : 'off';
+      console.log(`Executing MQTT action: ${mqttAction} for ${light}`);
+      client.publish(light, mqttAction, (err) => {
+        if (err) {
+          console.error('Error al enviar mensaje MQTT:', err);
+        } else {
+          console.log(`Acción MQTT ejecutada: ${mqttAction} en ${light}`);
+        }
+      });
+    }
+
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await loadLights();
+        await loadTimers();
+        // Establecer la fecha actual como valor predeterminado
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.value = today;
+
+        // Establecer la hora actual
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0,5);
+        timeInput.value = currentTime;
+
+        // Actualizar los temporizadores y verificar los pendientes cada segundo
+        setInterval(loadTimers, 1000);
+        setInterval(checkPendingTimers, 60000); // checkPendingTimers cada minuto
+      } catch (error) {
+        console.error('Error during initialization:', error);
+      }
+    });
+  </script>
+</body>
+</html>
