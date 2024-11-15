@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gemini</title>
+  <title>Calculadora de Energía y Monitor MQTT</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     :root {
       --primary-color: #4a90e2;
@@ -27,7 +29,6 @@
       min-height: 100vh;
     }
 
-    /* Sidebar */
     .sidebar {
       width: 220px;
       background-color: var(--sidebar-color);
@@ -63,37 +64,18 @@
       transform: translateX(5px);
     }
 
-    /* Contenedor principal */
     .contenedor {
       flex-grow: 1;
       padding: 2rem;
       transition: all 0.3s ease;
+      position: relative;
     }
 
-    /* Título */
-    h1 {
-      font-size: 1.8rem;
-      text-align: center;
+    h1, h2, h3 {
       color: var(--primary-color);
-      margin-bottom: 2rem;
     }
 
-    /* Textarea */
-    textarea {
-      width: 100%;
-      padding: 15px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 1rem;
-      line-height: 1.5rem;
-      background-color: #fff;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      resize: vertical;
-    }
-
-    /* Botón de consulta */
-    #botonConsulta {
+    button {
       display: block;
       width: 100%;
       padding: 15px;
@@ -104,19 +86,19 @@
       font-size: 1.2rem;
       cursor: pointer;
       transition: background-color 0.3s ease;
+      margin-bottom: 20px;
     }
 
-    #botonConsulta:hover {
+    button:hover {
       background-color: var(--hover-color);
     }
 
-    #botonConsulta:disabled {
+    button:disabled {
       background-color: #ccc;
       cursor: not-allowed;
     }
 
-    /* Resultados de la consulta */
-    #resultadoConsulta {
+    pre {
       background-color: #f9f9f9;
       padding: 20px;
       border-radius: 8px;
@@ -128,14 +110,69 @@
       word-wrap: break-word;
     }
 
-    /* Estilo para mostrar que está cargando */
-    .loading {
-      text-align: center;
-      font-size: 1.2rem;
-      color: #666;
+    select {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+      background-color: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
-    /* Responsive design */
+    .graph-container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+
+    .graph-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .graph-button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--primary-color);
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .graph-button:hover {
+      background-color: var(--hover-color);
+    }
+
+    .graph-button.active {
+      background-color: var(--hover-color);
+    }
+
+    #mqttMonitor {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background-color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      max-width: 300px;
+    }
+
+    #mqttMonitor h3 {
+      margin-top: 0;
+    }
+
+    .mqtt-value {
+      margin-bottom: 10px;
+    }
+
     @media (max-width: 768px) {
       .page-container {
         flex-direction: column;
@@ -150,8 +187,10 @@
         padding: 1rem;
       }
 
-      textarea {
-        height: 150px;
+      #mqttMonitor {
+        position: static;
+        margin-bottom: 20px;
+        max-width: none;
       }
     }
   </style>
@@ -166,72 +205,255 @@
       <a href="Temporizador.html">Temporizador</a>
       <a href="ia.html">IA</a>
       <a href="ajustes.html">Ajustes</a>
+      <a href="temporizador-report.html">Reporte Temporizador</a>
       <a href="index.html">Salir</a>
     </div>
 
     <div class="contenedor">
-      <h1>Formulario de Consulta a GEMINI</h1>
-      <div>
-        <textarea id="consulta" placeholder="Escribe tu consulta aquí..." rows="5"></textarea>
+      <div id="mqttMonitor">
+        <h3>Monitor de Luces</h3>
+        <div id="mqttValues"></div>
       </div>
-      <button type="button" id="botonConsulta">Consultar</button>
+
+      <h1>Calculadora de Energía y Consultas</h1>
+      <button type="button" id="botonCalcular">Calcular Costo de Energía</button>
+      <pre id="resultadoCalculo"></pre>
+      <select id="consultaSelector">
+        <option value="">Selecciona una consulta</option>
+        <option value="consumo24h">¿Cuánto he consumido en las últimas 24 horas?</option>
+        <option value="consumoMensual">¿Cuál es mi consumo mensual de energía?</option>
+        <option value="reducirConsumo">¿Cómo puedo reducir el consumo de energía durante el día/noche?</option>
+        <option value="eficienciaIluminacion">¿Cómo puedo mejorar la eficiencia energética de la iluminación en mi hogar?</option>
+        <option value="alertaConsumo">¿Existe alguna alerta de consumo excesivo en mi hogar?</option>
+        <option value="tipsAhorro">¿Me podrías recomendar tips de ahorro de energía basados en mi consumo actual?</option>
+        <option value="lucesConsumo">¿Qué luces están consumiendo más energía en mi hogar y por qué?</option>
+        <option value="intensidadLED">¿Cómo varía el consumo de energía cuando ajusto la intensidad de las luces LED?</option>
+        <option value="tiempoUsoLED">¿Cuál es el tiempo ideal de uso diario para optimizar el ahorro con luces LED?</option>
+        <option value="configuracionHorarios">¿Qué configuración de horarios para las luces LED me recomendarías para optimizar el consumo?</option>
+      </select>
+      <button type="button" id="botonConsulta">Realizar Consulta</button>
       <pre id="resultadoConsulta"></pre>
+      
+      <div class="graph-container">
+        <h2>Gráfico de Consumo de Energía</h2>
+        <div class="graph-buttons">
+          <button class="graph-button active" data-period="day">Diario</button>
+          <button class="graph-button" data-period="week">Semanal</button>
+          <button class="graph-button" data-period="month">Mensual</button>
+        </div>
+        <canvas id="energyChart"></canvas>
+      </div>
     </div>
   </div>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "@google/generative-ai": "https://esm.run/@google/generative-ai"
-      }
-    }
-  </script>
+  <script>
+    // Constants for energy calculation
+    const BULB_POWER = 9; // W
+    const USAGE_HOURS = 8; // hours per day
+    const MONTHLY_CONSUMPTION = 2; // kWh
+    const TARIFF = 435.51; // G/kWh
 
-  <script type="module">
-    import { GoogleGenerativeAI } from "@google/generative-ai"
-    const clave = "AIzaSyCxRDa-O8tYEEs78is4tOGt0G-mD0nPrY4";  // Copiar tu clave
+    // MQTT Configuration
+    const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
+    const mqttOptions = {
+      username: 'crazyjester833',
+      password: 'MOX70ExUuSBpjdQl'
+    };
 
-    const genAI = new GoogleGenerativeAI(clave);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Connect to MQTT broker
+    const client = mqtt.connect(mqttServer, mqttOptions);
 
+    const botonCalcular = document.querySelector("#botonCalcular");
+    const resultadoCalculo = document.querySelector("#resultadoCalculo");
+    const consultaSelector = document.querySelector("#consultaSelector");
     const botonConsulta = document.querySelector("#botonConsulta");
-    const consulta = document.querySelector("#consulta");
     const resultadoConsulta = document.querySelector("#resultadoConsulta");
+    const graphButtons = document.querySelectorAll(".graph-button");
+    const mqttValues = document.querySelector("#mqttValues");
+    let chart;
 
-    botonConsulta.addEventListener("click", realizarConsulta);
-    consulta.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        realizarConsulta();
-      }
+    const topics = [
+      'casa/ledazul',
+      'casa/ledverde',
+      'casa/ledrojo',
+      'sensor/corriente',
+      'sensor/voltaje',
+      'sensor/potencia'
+    ];
+
+    client.on('connect', () => {
+      console.log('Connected to MQTT broker');
+      topics.forEach(topic => client.subscribe(topic));
     });
 
-    async function realizarConsulta() {
-      if (!consulta.value.trim()) return;
+    client.on('message', (topic, message) => {
+      console.log('Received message:', topic, message.toString());
+      updateMqttValue(topic, message.toString());
+    });
 
-      desactivarBoton();
-      resultadoConsulta.textContent = "Consultando...";
+    function updateMqttValue(topic, value) {
+      let element = document.getElementById(topic);
+      if (!element) {
+        element = document.createElement('div');
+        element.id = topic;
+        element.className = 'mqtt-value';
+        mqttValues.appendChild(element);
+      }
+      element.innerHTML = `<strong>${topic}:</strong> ${value}`;
+    }
 
+    botonCalcular.addEventListener("click", calcularCostoEnergia);
+    botonConsulta.addEventListener("click", realizarConsulta);
+    graphButtons.forEach(button => {
+      button.addEventListener("click", () => updateGraph(button.dataset.period));
+    });
+
+    async function fetchSensorData() {
       try {
-        const result = await model.generateContent(consulta.value);
-        const response = await result.response;
-        resultadoConsulta.textContent = response.text();
+        const response = await fetch('/api/sensor-data');
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        const data = await response.json();
+        if (data.length === 0) {
+          throw new Error('No sensor data available');
+        }
+        console.log('Fetched sensor data:', data);
+        return data;
       } catch (error) {
-        resultadoConsulta.textContent = 'Problemas en la consulta: ' + error.message;
-      } finally {
-        activarBoton();
+        console.error('Error fetching sensor data:', error);
+        resultadoCalculo.textContent = `Error: ${error.message}`;
+        return [];
       }
     }
 
-    function desactivarBoton() {
-      botonConsulta.disabled = true;
-      botonConsulta.textContent = "Consultando...";
+    async function calcularCostoEnergia() {
+      resultadoCalculo.textContent = "Calculando...";
+      try {
+        const sensorData = await fetchSensorData();
+
+        if (sensorData.length === 0) {
+          resultadoCalculo.textContent = "No hay datos del sensor disponibles. Por favor, verifica la conexión con la base de datos.";
+          return;
+        }
+
+        const totalConsumption = sensorData.reduce((acc, reading) => acc + reading.value, 0) / 1000; // Convert mA to A
+        const energyConsumed = (totalConsumption * BULB_POWER * USAGE_HOURS) / 1000; // kWh
+        const monthlyCost = energyConsumed * TARIFF;
+
+        const calculation = `
+          Consumo total: ${totalConsumption.toFixed(2)} A
+          Energía consumida: ${energyConsumed.toFixed(2)} kWh
+          Costo mensual estimado: ${monthlyCost.toFixed(2)} G
+        `;
+
+        resultadoCalculo.textContent = calculation;
+      } catch (error) {
+        console.error('Error en el cálculo de energía:', error);
+        resultadoCalculo.textContent = `Error en el cálculo: ${error.message}`;
+      }
     }
 
-    function activarBoton() {
-      botonConsulta.disabled = false;
-      botonConsulta.textContent = "Consultar";
+    async function realizarConsulta() {
+      const selectedOption = consultaSelector.value;
+      if (!selectedOption) {
+        resultadoConsulta.textContent = "Por favor, selecciona una consulta.";
+        return;
+      }
+
+      resultadoConsulta.textContent = "Procesando consulta...";
+
+      try {
+        const response = await fetch(`/api/consulta-energia?tipo=${selectedOption}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        resultadoConsulta.textContent = data.respuesta;
+      } catch (error) {
+        resultadoConsulta.textContent = 'Error al procesar la consulta: ' + error.message;
+      }
     }
+
+    async function fetchEnergyConsumptionData(period) {
+      try {
+        const response = await fetch(`/api/energy-consumption?period=${period}`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+      } catch (error) {
+        console.error('Error fetching energy consumption data:', error);
+        return null;
+      }
+    }
+
+    async function updateGraph(period) {
+      graphButtons.forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`[data-period="${period}"]`).classList.add('active');
+
+      const { data, interval } = await fetchEnergyConsumptionData(period);
+
+      if (!data) {
+        console.error('No data available for graph');
+        return;
+      }
+
+      const labels = data.map(item => {
+        const date = new Date(item.time_interval);
+        return interval === 'HOUR' ? date.toLocaleTimeString() : date.toLocaleDateString();
+      });
+
+      const consumptionData = data.map(item => item.average_consumption);
+
+      if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = consumptionData;
+        chart.update();
+      } else {
+        const ctx = document.getElementById('energyChart').getContext('2d');
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Consumo de Energía',
+              data: consumptionData,
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Consumo (mA)'
+                }
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: period === 'day' ? 'Hora' : 'Fecha'
+                }
+              }
+            },
+            plugins: {
+              title: {
+                display: true,
+                text: `Consumo de Energía - ${period === 'day' ? 'Diario' : period === 'week' ? 'Semanal' : 'Mensual'}`
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Initialize the graph with daily data
+    updateGraph('day');
   </script>
 </body>
 </html>
