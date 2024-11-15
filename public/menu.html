@@ -6,7 +6,7 @@
   <title>Control de Luz con shiftr.io</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-          :root {
+    :root {
       --primary-color: #3498db;
       --secondary-color: #2ecc71;
       --background-color: #f5f7fa;
@@ -62,19 +62,6 @@
       background-color: var(--hover-color);
       transform: translateX(5px);
     }
-    .sidebar select {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 1rem;
-      border-radius: 5px;
-      background-color: var(--sidebar-color);
-      color: #fff;
-      border: 1px solid var(--primary-color);
-    }
-
-    .sidebar select option {
-      background-color: var(--sidebar-color);
-    }
 
     .content {
       flex-grow: 1;
@@ -96,12 +83,13 @@
     }
 
     .room {
-      background-color: #fff;
-      border-radius: 10px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
-    }
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  margin-bottom: 2rem;
+}
 
     .room:hover {
       transform: translateY(-5px);
@@ -109,10 +97,11 @@
     }
 
     .room h2 {
-      text-align: center;
-      color: var(--primary-color);
-      margin-bottom: 1.5rem;
-    }
+  text-align: center;
+  color: #3498db;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
 
     .room-btn {
       display: block;
@@ -186,28 +175,6 @@
       margin-top: 2rem;
     }
 
-    @media (max-width: 768px) {
-      .page-container {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        padding: 1rem;
-      }
-
-      .content {
-        padding: 1rem;
-      }
-
-      .rooms-container {
-        grid-template-columns: 1fr;
-      }
-
-      h1 {
-        font-size: 2rem;
-      }
-    }
     .modal {
       display: none;
       position: fixed;
@@ -244,21 +211,6 @@
       cursor: pointer;
     }
 
-    #addMenuBtn, #addLightBtn {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    #addMenuBtn:hover, #addLightBtn:hover {
-      background-color: #2980b9;
-    }
     #addLightBtn {
       display: block;
       width: 60px;
@@ -298,10 +250,48 @@
       cursor: pointer;
       transition: background-color 0.3s ease;
     }
+
     .modal-content button:hover {
       background-color: #2980b9;
     }
+
+    .delete-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.8em;
+      margin-top: 10px;
+    }
+
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+
     @media (max-width: 768px) {
+      .page-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 1rem;
+      }
+
+      .content {
+        padding: 1rem;
+      }
+
+      .rooms-container {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+
       #addLightBtn {
         width: 50px;
         height: 50px;
@@ -310,20 +300,48 @@
         right: 10px;
       }
     }
-    .delete-btn {
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 0.8em;
-  margin-top: 10px;
+    .level-sensor {
+  text-align: center;
+  padding: 1rem;
 }
 
-.delete-btn:hover {
-  background-color: #c0392b;
+.level-value {
+  font-size: 1.2rem;
+  color: #2c3e50;
+  font-weight: 500;
 }
+
+.level-bar {
+  width: 100%;
+  height: 8px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.level-fill {
+  height: 100%;
+  background-color: #3498db;
+  transition: width 0.3s ease;
+}
+
+    #currentSensor {
+      background-color: #fff;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    #currentSensor:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+    #currentSensor h2 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 1.5rem;
+    }
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
@@ -334,7 +352,10 @@
       <div id="menuItems">
         <a href="menu.html">Control de Luz</a>
         <a href="iframe.html">Dashboard</a>
+        <a href="Temporizador.html">Temporizador</a>
         <a href="ia.html">IA</a>
+        <a href="ajustes.html">Ajustes</a>
+        <a href="temporizador-report.html">Reporte Temporizador</a>
         <a href="index.html">Salir</a>
       </div>
       <select id="userInterfaces" aria-label="Interfaces de luz del usuario">
@@ -348,10 +369,22 @@
       <div class="rooms-container" id="roomsContainer">
         <!-- Las habitaciones existentes se mantendrán aquí -->
       </div>
-
-      <p id="estado">Estado: Desconectado</p>
+      <div class="rooms-container">
+        <div class="room" id="currentSensor">
+          <h2>Sensor de Corriente</h2>
+          <div class="level-sensor">
+            <p>Valor actual: <span class="level-value" data-topic="sensor/corriente">-- mA</span></p>
+            <div class="level-bar">
+              <div class="level-fill" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="estado-luz"></div>
+        </div>
+      </div>
+    
+      <p id="estado">Estado: Conectado</p>
     </div>
-  </div>
+    
 
   <button id="addLightBtn" aria-label="Agregar Luz">+</button>
 
@@ -369,7 +402,10 @@
         <option value="casa/luz">casa/luz</option>
         <option value="casa/ledazul">casa/ledazul</option>
         <option value="casa/ledrojo">casa/ledrojo</option>
+        <option value="casa/ledverde">casa/ledverde</option>
         <option value="casa/ledrojo/pwm">casa/ledrojo/pwm</option>
+        <option value="casa/ledazul/pwm">casa/ledazul/pwm</option>
+        <option value="casa/ledverde/pwm">casa/ledverde/pwm</option>
       </select>
       <button id="saveNewLight">Guardar</button>
     </div>
@@ -399,6 +435,7 @@
     client.on('connect', () => {
       console.log('Conectado a shiftr.io');
       estado.textContent = 'Estado: Conectado';
+      client.subscribe('sensor/corriente');
     });
 
     client.on('error', (error) => {
@@ -409,7 +446,7 @@
     async function checkAuthentication() {
       try {
         const response = await fetch('/api/check-auth', {
-          credentials: 'include' // This is important for including cookies in the request
+          credentials: 'include'
         });
         
         if (response.ok) {
@@ -431,6 +468,48 @@
         window.location.href = '/login.html';
       }
     }
+
+    async function sendSensorData(sensorType, value) {
+    try {
+      const response = await fetch('/api/sensor-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sensor_type: sensorType, value: value }),
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to store sensor data');
+      }
+
+      const result = await response.json();
+      console.log('Sensor data stored:', result);
+    } catch (error) {
+      console.error('Error storing sensor data:', error);
+    }
+  }
+
+  function handleSensorMessage(topic, message) {
+    if (topic === 'sensor/corriente') {
+      const sensorValue = parseFloat(message.toString().trim());
+      if (!isNaN(sensorValue)) {
+        const sensorElement = document.querySelector('[data-topic="sensor/corriente"]');
+        if (sensorElement) {
+          sensorElement.textContent = sensorValue.toFixed(2) + ' A';
+          const fillElement = document.querySelector('#currentSensor .level-fill');
+          if (fillElement) {
+            const percentage = Math.min(Math.max((sensorValue / 100) * 100, 0), 100);
+            fillElement.style.width = `${percentage}%`;
+          }
+        }
+        // Send sensor data to the API
+        sendSensorData('current', sensorValue);
+      }
+    }
+  }
+
 
     // Función para publicar un mensaje en MQTT
     function enviarMensaje(topic, mensaje) {
@@ -492,7 +571,6 @@
         alert('Error al cargar las interfaces del usuario');
       }
     }
-
     // Función para cargar todas las interfaces
     async function loadAllInterfaces() {
       try {
@@ -702,11 +780,20 @@
       }
     });
 
+    client.on('message', (topic, message) => {
+      console.log('Mensaje recibido:', topic, message.toString());
+      
+      if (topic === 'sensor/corriente') {
+        handleSensorMessage(topic, message);
+      } else if (topic.startsWith('casa/led')) {
+        // Manejar mensajes de luces (código existente)
+      }
+    });
+
     window.addEventListener('error', function(event) {
       console.error('Error no manejado:', event.error);
       alert('Ha ocurrido un error inesperado. Por favor, recarga la página e intenta de nuevo.');
     });
-
-</script>
+  </script>
 </body>
 </html>
