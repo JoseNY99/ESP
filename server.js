@@ -8,7 +8,7 @@ const temporizadorreportHandler = require('./api/temporizador-report');
 const userInterfacesHandler = require('./api/user-interfaces/[id]');
 
 const app = express();
-const port = process.env.PORT || 4099;
+const port = process.env.PORT || 4000;
 
 // Database connection configuration
 const dbConfig = {
