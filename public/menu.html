@@ -497,7 +497,7 @@
       if (!isNaN(sensorValue)) {
         const sensorElement = document.querySelector('[data-topic="sensor/corriente"]');
         if (sensorElement) {
-          sensorElement.textContent = sensorValue.toFixed(2) + ' A';
+          sensorElement.textContent = sensorValue.toFixed(2) + '  mA';
           const fillElement = document.querySelector('#currentSensor .level-fill');
           if (fillElement) {
             const percentage = Math.min(Math.max((sensorValue / 100) * 100, 0), 100);
