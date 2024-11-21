@@ -83,6 +83,11 @@
       transform: scale(0.98);
     }
 
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
     .message {
       text-align: center;
       margin-top: 1rem;
@@ -125,6 +130,29 @@
         flex-direction: column;
       }
     }
+
+    .forgot-password {
+      text-align: right;
+      margin-top: 0.5rem;
+    }
+
+    .forgot-password a {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .forgot-password a:hover {
+      text-decoration: underline;
+    }
+
+    #countdown {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--error-color);
+    }
   </style>
 </head>
 <body>
@@ -137,21 +165,51 @@
       <div class="input-group">
         <input type="password" id="password" name="password" placeholder="Contraseña" required>
       </div>
+      <div class="forgot-password">
+        <a href="/forgot-password.html">¿Olvidaste tu contraseña?</a>
+      </div>
       <div class="button-group">
-        <button type="submit">Iniciar Sesión</button>
+        <button type="submit" id="loginButton">Iniciar Sesión</button>
         <button type="button" id="registerButton">Registrarse</button>
       </div>
       <div id="message" class="message" role="alert" aria-live="polite"></div>
+      <div id="countdown"></div>
     </form>
   </div>
 
   <script>
+    let loginAttempts = 0;
+    let lockoutEndTime = 0;
+    const maxAttempts = 5;
+    const lockoutDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+    function updateCountdown() {
+      const now = Date.now();
+      const timeLeft = Math.max(0, lockoutEndTime - now);
+      const minutes = Math.floor(timeLeft / 60000);
+      const seconds = Math.floor((timeLeft % 60000) / 1000);
+      
+      const countdownElement = document.getElementById('countdown');
+      if (timeLeft > 0) {
+        countdownElement.textContent = `Intento bloqueado. Espere ${minutes}:${seconds.toString().padStart(2, '0')} minutos.`;
+        setTimeout(updateCountdown, 1000);
+      } else {
+        countdownElement.textContent = '';
+        document.getElementById('loginButton').disabled = false;
+      }
+    }
+
     document.getElementById('loginForm').addEventListener('submit', async function(event) {
       event.preventDefault();
+
+      if (Date.now() < lockoutEndTime) {
+        return;
+      }
 
       const username = document.getElementById('username').value;
       const password = document.getElementById('password').value;
       const messageElement = document.getElementById('message');
+      const loginButton = document.getElementById('loginButton');
 
       try {
         const response = await fetch('/login', {
@@ -168,14 +226,21 @@
           messageElement.textContent = 'Inicio de sesión exitoso. Redirigiendo...';
           messageElement.className = 'message success';
           messageElement.style.opacity = '1';
+          loginAttempts = 0;
           setTimeout(() => {
             window.location.href = '/menu.html';
           }, 1500);
         } else {
+          loginAttempts++;
+          if (loginAttempts >= maxAttempts) {
+            lockoutEndTime = Date.now() + lockoutDuration;
+            loginButton.disabled = true;
+            updateCountdown();
+          }
           throw new Error(result.message || 'Error de inicio de sesión');
         }
       } catch (error) {
-        messageElement.textContent = error.message;
+        messageElement.textContent = `${error.message}. Intentos restantes: ${maxAttempts - loginAttempts}`;
         messageElement.className = 'message error';
         messageElement.style.opacity = '1';
       }
@@ -184,6 +249,12 @@
     document.getElementById('registerButton').addEventListener('click', function() {
       window.location.href = '/register.html';
     });
+
+    // Check for existing lockout on page load
+    if (Date.now() < lockoutEndTime) {
+      document.getElementById('loginButton').disabled = true;
+      updateCountdown();
+    }
   </script>
 </body>
 </html>

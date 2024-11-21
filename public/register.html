@@ -135,6 +135,38 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    #verificationForm {
+      display: none;
+    }
+
+    #countdown {
+      text-align: center;
+      font-size: 1.2rem;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    #backButton {
+      display: block;
+      width: 100%;
+      padding: 0.75rem;
+      background-color: var(--secondary-color);
+      color: var(--text-color);
+      border: 1px solid var(--text-color);
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s, transform 0.1s;
+      margin-top: 1rem;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    #backButton:hover {
+      background-color: #e1e1e1;
+    }
   </style>
 </head>
 <body>
@@ -156,14 +188,21 @@
       <div class="input-group">
         <label for="username">Nombre de usuario</label>
         <input type="text" id="username" name="username" required>
+        <span id="usernameMessage" class="message"></span>
       </div>
       <div class="input-group">
         <label for="email">Correo electrónico</label>
         <input type="email" id="email" name="email" required>
+        <span id="emailMessage" class="message"></span>
       </div>
       <div class="input-group">
         <label for="password">Contraseña</label>
         <input type="password" id="password" name="password" required minlength="8">
+      </div>
+      <div class="input-group">
+        <label for="confirmPassword">Confirmar Contraseña</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8">
+        <span id="passwordMessage" class="message"></span>
       </div>
       <button type="submit">
         Registrarse
@@ -171,33 +210,126 @@
       </button>
       <div id="message" class="message" role="alert" aria-live="polite"></div>
     </form>
+
+    <form id="verificationForm" style="display: none;">
+      <div class="input-group">
+        <label for="verificationCode">Código de verificación</label>
+        <input type="text" id="verificationCode" name="verificationCode" required>
+      </div>
+      <div id="countdown"></div>
+      <button type="submit">
+        Verificar
+        <span class="spinner" id="verificationSpinner"></span>
+      </button>
+      <div id="verificationMessage" class="message" role="alert" aria-live="polite"></div>
+    </form>
+
+    <a href="/index.html" id="backButton">Volver al inicio</a>
   </div>
 
   <script>
-    document.getElementById('registerForm').addEventListener('submit', async function(event) {
+    const registerForm = document.getElementById('registerForm');
+    const verificationForm = document.getElementById('verificationForm');
+    const messageElement = document.getElementById('message');
+    const verificationMessageElement = document.getElementById('verificationMessage');
+    const spinner = document.getElementById('spinner');
+    const verificationSpinner = document.getElementById('verificationSpinner');
+    const countdownElement = document.getElementById('countdown');
+    const backButton = document.getElementById('backButton');
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    const usernameMessage = document.getElementById('usernameMessage');
+    const emailMessage = document.getElementById('emailMessage');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const passwordMessage = document.getElementById('passwordMessage');
+
+    let countdownInterval;
+
+    function startCountdown(duration) {
+      let timer = duration;
+      countdownElement.textContent = `Tiempo restante: ${timer} segundos`;
+
+      countdownInterval = setInterval(() => {
+        timer--;
+        countdownElement.textContent = `Tiempo restante: ${timer} segundos`;
+
+        if (timer <= 0) {
+          clearInterval(countdownInterval);
+          verificationMessageElement.textContent = 'El código ha expirado. Por favor, regístrese de nuevo.';
+          verificationMessageElement.className = 'message error';
+          verificationMessageElement.style.opacity = '1';
+          verificationForm.querySelector('button[type="submit"]').disabled = true;
+        }
+      }, 1000);
+    }
+
+    async function checkAvailability(field, value) {
+      try {
+        const response = await fetch(`/api/check-availability?field=${field}&value=${value}`);
+        const result = await response.json();
+        return result.available;
+      } catch (error) {
+        console.error('Error checking availability:', error);
+        return false;
+      }
+    }
+
+    usernameInput.addEventListener('blur', async () => {
+      const username = usernameInput.value;
+      if (username) {
+        const isAvailable = await checkAvailability('username', username);
+        usernameMessage.textContent = isAvailable ? 'Nombre de usuario disponible' : 'Nombre de usuario ya existe';
+        usernameMessage.className = `message ${isAvailable ? 'success' : 'error'}`;
+      }
+    });
+
+    emailInput.addEventListener('blur', async () => {
+      const email = emailInput.value;
+      if (email) {
+        const isAvailable = await checkAvailability('email', email);
+        emailMessage.textContent = isAvailable ? 'Correo electrónico disponible' : 'Correo electrónico ya existe';
+        emailMessage.className = `message ${isAvailable ? 'success' : 'error'}`;
+      }
+    });
+
+    function checkPasswordMatch() {
+      if (passwordInput.value === confirmPasswordInput.value) {
+        passwordMessage.textContent = 'Las contraseñas coinciden';
+        passwordMessage.className = 'message success';
+        passwordMessage.style.opacity = '1';
+        return true;
+      } else {
+        passwordMessage.textContent = 'Las contraseñas no coinciden';
+        passwordMessage.className = 'message error';
+        passwordMessage.style.opacity = '1';
+        return false;
+      }
+    }
+
+    passwordInput.addEventListener('input', checkPasswordMatch);
+    confirmPasswordInput.addEventListener('input', checkPasswordMatch);
+
+    registerForm.addEventListener('submit', async function(event) {
       event.preventDefault();
 
-      const nombre = document.getElementById('nombre').value;
-      const apellido = document.getElementById('apellido').value;
-      const cedula = document.getElementById('cedula').value;
-      const username = document.getElementById('username').value;
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const messageElement = document.getElementById('message');
-      const spinner = document.getElementById('spinner');
-      const submitButton = document.querySelector('button[type="submit"]');
+      if (!checkPasswordMatch()) {
+        return;
+      }
+
+      const formData = new FormData(registerForm);
+      const submitButton = registerForm.querySelector('button[type="submit"]');
 
       try {
-        // Disable the submit button and show the spinner
         submitButton.disabled = true;
         spinner.style.display = 'inline-block';
 
-        const response = await fetch('/register', {
+        const response = await fetch('/api/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ nombre, apellido, cedula, username, email, password })
+          body: JSON.stringify(Object.fromEntries(formData))
         });
 
         const result = await response.json();
@@ -206,8 +338,9 @@
           messageElement.textContent = result.message;
           messageElement.className = 'message success';
           messageElement.style.opacity = '1';
-          // Clear the form
-          event.target.reset();
+          registerForm.style.display = 'none';
+          verificationForm.style.display = 'block';
+          startCountdown(120);
         } else {
           throw new Error(result.message || 'Error en el registro');
         }
@@ -216,9 +349,50 @@
         messageElement.className = 'message error';
         messageElement.style.opacity = '1';
       } finally {
-        // Re-enable the submit button and hide the spinner
         submitButton.disabled = false;
         spinner.style.display = 'none';
+      }
+    });
+
+    verificationForm.addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const email = document.getElementById('email').value;
+      const verificationCode = document.getElementById('verificationCode').value;
+      const submitButton = verificationForm.querySelector('button[type="submit"]');
+
+      try {
+        submitButton.disabled = true;
+        verificationSpinner.style.display = 'inline-block';
+
+        const response = await fetch('/api/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, code: verificationCode })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          clearInterval(countdownInterval);
+          verificationMessageElement.textContent = result.message;
+          verificationMessageElement.className = 'message success';
+          verificationMessageElement.style.opacity = '1';
+          setTimeout(() => {
+            window.location.href = '/index.html';
+          }, 2000);
+        } else {
+          throw new Error(result.message || 'Error en la verificación');
+        }
+      } catch (error) {
+        verificationMessageElement.textContent = error.message;
+        verificationMessageElement.className = 'message error';
+        verificationMessageElement.style.opacity = '1';
+      } finally {
+        submitButton.disabled = false;
+        verificationSpinner.style.display = 'none';
       }
     });
   </script>
