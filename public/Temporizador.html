@@ -274,28 +274,21 @@
       console.error('Error de conexión:', error);
       estado.textContent = 'Estado: Error de conexión';
     });
-
+    const lightOptions = [
+    { value: "casa/ledrojo", text: "Dormitorio Principal" },
+    { value: "casa/ledverde", text: "Dormitorio invitado" },
+    { value: "casa/ledazul", text: "Sala" }
+];
     // Función para cargar las luces disponibles
-    async function loadLights() {
-  try {
-    const response = await fetch('/api/user-interfaces', {
-      credentials: 'include'
+    function loadLights() {
+    lightSelect.innerHTML = ''; // Limpiar opciones existentes
+    
+    lightOptions.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value;
+        optionElement.textContent = option.text;
+        lightSelect.appendChild(optionElement);
     });
-    if (!response.ok) {
-      throw new Error('Error al cargar las interfaces del usuario');
-    }
-    const interfaces = await response.json();
-    lightSelect.innerHTML = '';
-    interfaces.slice(0, 3).forEach(interface => {
-      const option = document.createElement('option');
-      option.value = interface.lucesid;
-      option.textContent = interface.nombre;
-      lightSelect.appendChild(option);
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Error al cargar las luces disponibles');
-  }
 }
 // Función para actualizar los contadores en tiempo real
 // Function to update countdowns
@@ -565,17 +558,34 @@ timerForm.addEventListener('submit', async (e) => {
     });
 
   // Function to execute MQTT action
-function executeMqttAction(light, action) {
+  function executeMqttAction(light, action) {
     const mqttAction = action === 'Encender' ? 'on' : 'off';
     console.log(`Executing MQTT action: ${mqttAction} for ${light}`);
-    client.publish(light, mqttAction, (err) => {
-        if (err) {
-            console.error('Error al enviar mensaje MQTT:', err);
-        } else {
-            console.log(`Acción MQTT ejecutada: ${mqttAction} en ${light}`);
-        }
+    
+    // Map the light selection to the correct MQTT topic
+    let mqttTopic;
+    switch(light) {
+      case 'casa/ledrojo':
+        mqttTopic = 'casa/ledrojo';
+        break;
+      case 'casa/ledverde':
+        mqttTopic = 'casa/ledverde';
+        break;
+      case 'casa/ledazul':
+        mqttTopic = 'casa/ledazul';
+        break;
+      default:
+        console.error('Invalid light selection');
+        return;
+    }
+    client.publish(mqttTopic, mqttAction, (err) => {
+      if (err) {
+        console.error('Error al enviar mensaje MQTT:', err);
+      } else {
+        console.log(`Acción MQTT ejecutada: ${mqttAction} en ${mqttTopic}`);
+      }
     });
-}
+  }
     function updateTimers() {
   const timerElements = document.querySelectorAll('.timer-item');
   const now = new Date();
@@ -601,7 +611,7 @@ function executeMqttAction(light, action) {
 // Initialization
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await loadLights();
+        loadLights(); // Llamar a loadLights directamente
         await loadTimers();
 
         const now = new Date();
