@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Visor de PDF a Pantalla Completa</title>
+    <link rel="icon" type="image/png" href="download.png">
+  <link rel="apple-touch-icon" href="download.png">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        #pdf-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .button {
+            position: fixed;
+            padding: 10px 20px;
+            background-color: rgba(76, 175, 80, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            z-index: 1000;
+        }
+        .button:hover {
+            background-color: rgba(69, 160, 73, 0.9);
+        }
+        #download-btn {
+            bottom: 20px;
+            right: 20px;
+        }
+        #menu-btn {
+            top: 20px;
+            left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="pdf-container">
+        <iframe src="/manual.pdf" width="100%" height="100%" frameborder="0" style="border: none;"></iframe>
+    </div>
+    <button id="download-btn" class="button" onclick="descargarPDF()">Descargar PDF</button>
+    <button id="menu-btn" class="button" onclick="volverAlMenu()">Volver al Menú</button>
+
+    <script>
+        function descargarPDF() {
+            var link = document.createElement('a');
+            link.href = '/manual.pdf';
+            link.download = 'manual.pdf';
+            link.target = '_blank';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function volverAlMenu() {
+            window.location.href = 'menu.html';
+        }
+
+        // Ajustar el tamaño del iframe cuando cambia el tamaño de la ventana
+        window.addEventListener('resize', function() {
+            var container = document.getElementById('pdf-container');
+            var iframe = container.querySelector('iframe');
+            iframe.style.width = container.offsetWidth + 'px';
+            iframe.style.height = container.offsetHeight + 'px';
+        });
+
+        // Llamar a la función de ajuste al cargar la página
+        window.dispatchEvent(new Event('resize'));
+    </script>
+</body>
+</html>
+

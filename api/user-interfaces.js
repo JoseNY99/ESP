@@ -12,7 +12,7 @@ async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const connection = await mysql.createConnection(dbConfig);
-      const query = 'SELECT id, nombre, lucesid, tipo FROM interfaces WHERE id_usuario = ?';
+      const query = 'SELECT id, nombre,estado, lucesid, tipo FROM interfaces WHERE id_usuario = ?';
       const values = [req.session.userId];
       
       const [rows] = await connection.execute(query, values);

@@ -52,7 +52,7 @@ router.post('/change-password', checkAuth, async (req, res) => {
   try {
     const connection = await mysql.createConnection(dbConfig);
     await connection.execute(
-      'UPDATE usuario SET contrasenha = ? WHERE id = ?',
+      'UPDATE usuario SET contrasena = ? WHERE id = ?',
       [contrasenha, req.session.userId]
     );
     await connection.end();

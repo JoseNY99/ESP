@@ -227,7 +227,64 @@ app.post('/api/add-timer', async (req, res) => {
     res.status(500).json({ error: 'Error al insertar el temporizador' });
   }
 });
+app.post('/api/update-interface-state', async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'No autorizado' });
+    }
 
+    const { id, estado } = req.body;
+
+    if (!id || estado === undefined) {
+        return res.status(400).json({ error: 'Se requieren ID y estado' });
+    }
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        
+        const [result] = await connection.execute(
+            'UPDATE interfaces SET estado = ? WHERE id = ? AND id_usuario = ?',
+            [estado, id, req.session.userId]
+        );
+
+        await connection.end();
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Interfaz no encontrada o no autorizada' });
+        }
+
+        res.status(200).json({ message: 'Estado de la interfaz actualizado correctamente' });
+    } catch (err) {
+        console.error('Error al actualizar el estado de la interfaz:', err);
+        res.status(500).json({ error: 'Error al actualizar el estado de la interfaz' });
+    }
+});
+
+// Modificar la función loadAllInterfaces para incluir el campo estado
+async function loadAllInterfaces() {
+  try {
+      const connection = await mysql.createConnection(dbConfig);
+      const [interfaces] = await connection.execute(
+          'SELECT id, nombre, lucesid, tipo, estado FROM interfaces WHERE id_usuario = ?',
+          [req.session.userId]
+      );
+      await connection.end();
+
+      // ... (el resto de la función permanece igual)
+
+      interfaces.forEach(interfaceDetails => {
+          // ... (código existente)
+
+          // Asegúrate de que el estado se pasa al crear el elemento de interfaz
+          const newRoom = createInterfaceElement(interfaceDetails);
+          roomsContainer.appendChild(newRoom);
+      });
+
+      // ... (el resto de la función permanece igual)
+  } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Error al cargar las interfaces del usuario' });
+  }
+}
 app.get('/api/get-timers', async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: 'No autorizado' });
@@ -296,7 +353,43 @@ app.post('/api/forgot-password-username', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error en el proceso de recuperación de contraseña' });
   }
 });
+function createSimplePDF(filePath) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument();
+    const stream = fs.createWriteStream(filePath);
 
+    doc.pipe(stream);
+    doc.fontSize(25).text('Manual de Usuario', 100, 100);
+    doc.fontSize(18).text('Este es un manual de usuario de ejemplo.', 100, 150);
+    doc.end();
+
+    stream.on('finish', resolve);
+    stream.on('error', reject);
+  });
+}
+
+// Specific route for serving the PDF file
+app.get('/manual-usuario.pdf', async (req, res) => {
+  const filePath = path.join(__dirname, 'public', 'manual-usuario.pdf');
+
+  try {
+    // Check if the file exists
+    await fs.promises.access(filePath, fs.constants.F_OK);
+  } catch (error) {
+    // If the file doesn't exist, create it
+    console.log('PDF file not found. Creating a simple PDF...');
+    await createSimplePDF(filePath);
+  }
+
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('Error sending PDF file:', err);
+      res.status(500).send('Error sending PDF file');
+    } else {
+      console.log('PDF file sent successfully');
+    }
+  });
+});
 app.post('/api/forgot-password', async (req, res) => {
   const { email } = req.body;
 

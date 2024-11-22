@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Luz con shiftr.io</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="download.png">
+  <link rel="apple-touch-icon" href="download.png">
   <style>
     :root {
       --primary-color: #3498db;
@@ -342,6 +344,25 @@
       color: var(--primary-color);
       margin-bottom: 1.5rem;
     }
+    input[disabled] {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        .estado-luz {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 1rem auto;
+            transition: all 0.3s ease;
+        }
+        .estado-luz.on {
+            background-color: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+        }
+        .estado-luz.off {
+            background-color: #e74c3c;
+            box-shadow: none;
+        }
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
@@ -357,6 +378,7 @@
         <a href="ajustes.html">Ajustes</a>
         <a href="temporizador-report.html">Reporte Temporizador</a>
         <a href="sensor-data-report.html">Reporte Corriente</a>
+        <a href="manualusuario.html">Menu de Usuario</a>
         <a href="index.html">Salir</a>
       </div>
       <select id="userInterfaces" aria-label="Interfaces de luz del usuario">
@@ -392,25 +414,19 @@
   <!-- Modal para agregar luz -->
   <div id="addLightModal" class="modal">
     <div class="modal-content">
-      <span class="close">&times;</span>
-      <h2>Agregar Nueva Luz</h2>
-      <select id="lightType">
-        <option value="simple">Luz Simple (On/Off)</option>
-        <option value="control">Luz con Control PWM</option>
-      </select>
-      <input type="text" id="lightName" placeholder="Nombre de la luz">
-      <select id="lightTopic">
-        <option value="casa/luz">casa/luz</option>
-        <option value="casa/ledazul">casa/ledazul</option>
-        <option value="casa/ledrojo">casa/ledrojo</option>
-        <option value="casa/ledverde">casa/ledverde</option>
-        <option value="casa/ledrojo/pwm">casa/ledrojo/pwm</option>
-        <option value="casa/ledazul/pwm">casa/ledazul/pwm</option>
-        <option value="casa/ledverde/pwm">casa/ledverde/pwm</option>
-      </select>
-      <button id="saveNewLight">Guardar</button>
+        <span class="close">&times;</span>
+        <h2>Agregar Nueva Luz</h2>
+        <select id="lightType">
+            <option value="simple">Control (On/Off)</option>
+            <option value="control">Control Nivel</option>
+        </select>
+        <input type="text" id="lightName" placeholder="Nombre de la luz" disabled>
+        <select id="lightTopic">
+            <!-- Las opciones se llenarán dinámicamente con JavaScript -->
+        </select>
+        <button id="saveNewLight">Guardar</button>
     </div>
-  </div>
+</div>
 
   <script>
     // Configuración MQTT
@@ -458,7 +474,7 @@
             return userId;
           } else {
             console.log('User is not authenticated');
-            window.location.href = '/login.html';
+            window.location.href = '/index.html';
           }
         } else {
           throw new Error('Failed to check authentication');
@@ -466,7 +482,7 @@
       } catch (error) {
         console.error('Error checking authentication:', error);
         alert('Error al verificar la autenticación. Por favor, inicia sesión nuevamente.');
-        window.location.href = '/login.html';
+        window.location.href = '/index.html';
       }
     }
 
@@ -493,37 +509,165 @@
   }
 
   function handleSensorMessage(topic, message) {
-    if (topic === 'sensor/corriente') {
-      const sensorValue = parseFloat(message.toString().trim());
-      if (!isNaN(sensorValue)) {
-        const sensorElement = document.querySelector('[data-topic="sensor/corriente"]');
-        if (sensorElement) {
-          sensorElement.textContent = sensorValue.toFixed(2) + '  mA';
-          const fillElement = document.querySelector('#currentSensor .level-fill');
-          if (fillElement) {
-            const percentage = Math.min(Math.max((sensorValue / 100) * 100, 0), 100);
-            fillElement.style.width = `${percentage}%`;
+      if (topic === 'sensor/corriente') {
+        const sensorValue = parseFloat(message.toString().trim());
+        if (!isNaN(sensorValue)) {
+          const sensorElement = document.querySelector('[data-topic="sensor/corriente"]');
+          if (sensorElement) {
+            sensorElement.textContent = sensorValue.toFixed(2) + ' mA';
+            const fillElement = document.querySelector('#currentSensor .level-fill');
+            if (fillElement) {
+              const percentage = Math.min(Math.max((sensorValue / 100) * 100, 0), 100);
+              fillElement.style.width = `${percentage}%`;
+            }
           }
+          // Actualizar el estado de la luz
+          const estadoLuz = document.querySelector('#currentSensor .estado-luz');
+          if (estadoLuz) {
+            if (sensorValue > 0) {
+              encenderLuz(estadoLuz);
+            } else {
+              apagarLuz(estadoLuz);
+            }
+          }
+          // Send sensor data to the API
+          sendSensorData('current', sensorValue);
         }
-        // Send sensor data to the API
-        sendSensorData('current', sensorValue);
       }
     }
-  }
 
+        // Modificar la función para crear elementos de interfaz
+        function createInterfaceElement(interfaceDetails) {
+            const newRoom = document.createElement('div');
+            newRoom.className = 'room';
+            newRoom.dataset.id = interfaceDetails.id;
 
-    // Función para publicar un mensaje en MQTT
-    function enviarMensaje(topic, mensaje) {
-      client.publish(topic, mensaje, (err) => {
-        if (err) {
-          console.error('Error al enviar mensaje:', err);
-        } else {
-          console.log(`Mensaje enviado: ${mensaje} en ${topic}`);
+            const lucesid = interfaceDetails.lucesid || 'default/topic';
+            const tipo = interfaceDetails.tipo || 'desconocido';
+            const estado = interfaceDetails.estado ? 'on' : 'off';
+
+            newRoom.innerHTML = `
+                <h2>${interfaceDetails.nombre}</h2>
+                ${tipo === 'simple' ? `
+                    <button class="room-btn" onclick="enviarMensaje('${lucesid}', 'on', ${interfaceDetails.id})">Encender</button>
+                    <button class="room-btn" onclick="enviarMensaje('${lucesid}', 'off', ${interfaceDetails.id})">Apagar</button>
+                ` : tipo === 'control' ? `
+                    <div class="slider-container">
+                        <input type="range" min="0" max="1023" value="${interfaceDetails.estado ? 1023 : 0}" class="slider" oninput="updateSlider(this, '${lucesid}', ${interfaceDetails.id})">
+                        <p>Brillo: <span>${interfaceDetails.estado ? 1023 : 0}</span></p>
+                    </div>
+                ` : `
+                    <p>Tipo de interfaz no reconocido o faltante: ${tipo}</p>
+                `}
+                <div class="estado-luz ${estado}"></div>
+                <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
+            `;
+            return newRoom;
         }
-      });
+ // Modify the updateSlider function
+      function updateSlider(slider, topic, interfaceId) {
+            const value = parseInt(slider.value);
+            slider.nextElementSibling.querySelector('span').textContent = value;
+            enviarMensaje(topic, value.toString(), interfaceId);
+        }
+
+
+    // Agregar event listener para el cambio en el select de lightTopic
+    document.getElementById('lightTopic').addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex].text;
+      const lightNameInput = document.getElementById('lightName');
+      
+      if (selectedOption.includes('Dormitorio Principal')) {
+        lightNameInput.value = 'Nombre de la luz: Dormitorio Principal';
+      } else if (selectedOption.includes('Dormitorio invitado')) {
+        lightNameInput.value = 'Nombre de la luz: Dormitorio invitado';
+      } else if (selectedOption.includes('Sala')) {
+        lightNameInput.value = 'Nombre de la luz: Sala';
+      }
+    });
+
+    // Modificar la función handleSensorMessage
+    function handleSensorMessage(topic, message) {
+      if (topic === 'sensor/corriente') {
+        const sensorValue = parseFloat(message.toString().trim());
+        if (!isNaN(sensorValue)) {
+          const sensorElement = document.querySelector('[data-topic="sensor/corriente"]');
+          if (sensorElement) {
+            sensorElement.textContent = sensorValue.toFixed(2) + ' mA';
+            const fillElement = document.querySelector('#currentSensor .level-fill');
+            if (fillElement) {
+              const percentage = Math.min(Math.max((sensorValue / 100) * 100, 0), 100);
+              fillElement.style.width = `${percentage}%`;
+            }
+          }
+          // Actualizar el estado de la luz
+          const estadoLuz = document.querySelector('#currentSensor .estado-luz');
+          if (estadoLuz) {
+            if (sensorValue > 0) {
+              encenderLuz(estadoLuz);
+            } else {
+              apagarLuz(estadoLuz);
+            }
+          }
+          // Send sensor data to the API
+          sendSensorData('current', sensorValue);
+        }
+      }
     }
 
-    // Funciones para cambiar el color del círculo
+    // Función para publicar un mensaje en MQTT
+        // Modificar la función para enviar mensaje
+        function enviarMensaje(topic, mensaje, interfaceId) {
+            client.publish(topic, mensaje, (err) => {
+                if (err) {
+                    console.error('Error al enviar mensaje:', err);
+                } else {
+                    console.log(`Mensaje enviado: ${mensaje} en ${topic}`);
+                    // Actualizar el estado de la luz
+                    const room = document.querySelector(`.room[data-id="${interfaceId}"]`);
+                    if (room) {
+                        const estadoLuz = room.querySelector('.estado-luz');
+                        if (estadoLuz) {
+                            if (mensaje === 'on' || parseInt(mensaje) > 0) {
+                                estadoLuz.classList.remove('off');
+                                estadoLuz.classList.add('on');
+                                updateInterfaceState(interfaceId, 1);
+                            } else {
+                                estadoLuz.classList.remove('on');
+                                estadoLuz.classList.add('off');
+                                updateInterfaceState(interfaceId, 0);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // Agregar función para actualizar el estado de la interfaz en el servidor
+        function updateInterfaceState(id, estado) {
+            fetch('/api/update-interface-state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id, estado }),
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Estado de la interfaz actualizado:', data);
+                // Actualizar el estado en la interfaz de usuario
+                const room = document.querySelector(`.room[data-id="${id}"]`);
+                if (room) {
+                    const estadoLuz = room.querySelector('.estado-luz');
+                    if (estadoLuz) {
+                        estadoLuz.classList.toggle('on', estado === 1);
+                        estadoLuz.classList.toggle('off', estado === 0);
+                    }
+                }
+            })
+            .catch(error => console.error('Error al actualizar el estado de la interfaz:', error));
+        }
+
     function encenderLuz(elemento) {
       elemento.style.backgroundColor = '#2ecc71';
       elemento.style.boxShadow = '0 0 10px #2ecc71';
@@ -533,6 +677,7 @@
       elemento.style.backgroundColor = '#e74c3c';
       elemento.style.boxShadow = 'none';
     }
+
 
     // Función para abrir modal
     function openModal(modal) {
@@ -573,62 +718,40 @@
       }
     }
     // Función para cargar todas las interfaces
-    async function loadAllInterfaces() {
-      try {
-        const response = await fetch('/api/user-interfaces', {
-          credentials: 'include'
-        });
-        if (!response.ok) {
-          throw new Error(`Error al cargar las interfaces del usuario: ${response.status} ${response.statusText}`);
+          // Modificar la función loadAllInterfaces
+        async function loadAllInterfaces() {
+            try {
+                const response = await fetch('/api/user-interfaces', {
+                    credentials: 'include'
+                });
+                if (!response.ok) {
+                    throw new Error(`Error al cargar las interfaces del usuario: ${response.status} ${response.statusText}`);
+                }
+                const interfaces = await response.json();
+                console.log('Interfaces cargadas:', interfaces);
+
+                if (interfaces.length === 0) {
+                    roomsContainer.innerHTML = '<p>No hay interfaces disponibles.</p>';
+                    return;
+                }
+
+                // Limpiar el contenedor de habitaciones
+                roomsContainer.innerHTML = '';
+
+                // Crear elementos para cada interfaz
+                interfaces.forEach(interfaceDetails => {
+                    console.log('Procesando interfaz:', interfaceDetails);
+                    const newRoom = createInterfaceElement(interfaceDetails);
+                    roomsContainer.appendChild(newRoom);
+                });
+
+                // Actualizar el select de interfaces
+                updateInterfaceSelect(interfaces);
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cargar las interfaces del usuario: ' + error.message);
+            }
         }
-        const interfaces = await response.json();
-        console.log('Interfaces cargadas:', interfaces);
-
-        if (interfaces.length === 0) {
-          roomsContainer.innerHTML = '<p>No hay interfaces disponibles.</p>';
-          return;
-        }
-
-        // Limpiar el contenedor de habitaciones
-        roomsContainer.innerHTML = '';
-
-        // Crear elementos para cada interfaz
-        interfaces.forEach(interfaceDetails => {
-          console.log('Procesando interfaz:', interfaceDetails);
-          const newRoom = document.createElement('div');
-          newRoom.className = 'room';
-          newRoom.dataset.id = interfaceDetails.id;
-
-          // Manejar casos donde lucesid o tipo puedan estar ausentes
-          const lucesid = interfaceDetails.lucesid || 'default/topic';
-          const tipo = interfaceDetails.tipo || 'desconocido';
-
-          newRoom.innerHTML = `
-            <h2>${interfaceDetails.nombre}</h2>
-            ${tipo === 'simple' ? `
-              <button class="room-btn" onclick="enviarMensaje('${lucesid}', 'on')">Encender</button>
-              <button class="room-btn" onclick="enviarMensaje('${lucesid}', 'off')">Apagar</button>
-            ` : tipo === 'control' ? `
-              <div class="slider-container">
-                <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${lucesid}', this.value)">
-                <p>Brillo: <span>0</span></p>
-              </div>
-            ` : `
-              <p>Tipo de interfaz no reconocido o faltante: ${tipo}</p>
-            `}
-            <div class="estado-luz"></div>
-            <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
-          `;
-          roomsContainer.appendChild(newRoom);
-        });
-
-        // Actualizar el select de interfaces
-        updateInterfaceSelect(interfaces);
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error al cargar las interfaces del usuario: ' + error.message);
-      }
-    }
 
     function updateInterfaceSelect(interfaces) {
       userInterfaces.innerHTML = '<option value="">Todas las interfaz</option>';
@@ -725,51 +848,101 @@
     });
 
     // Llamar a loadAllInterfaces cuando se guarda una nueva luz
-    saveNewLight.onclick = async () => {
-      const type = document.getElementById('lightType').value;
-      const name = document.getElementById('lightName').value;
-      const topic = document.getElementById('lightTopic').value;
-      if (name && topic) {
-        const newLight = {
-          nombre: name,
-          lucesid: topic,
-          tipo: type,
-          id_usuario: userId
+    const lightTypeSelect = document.getElementById('lightType');
+        const lightNameInput = document.getElementById('lightName');
+        const lightTopicSelect = document.getElementById('lightTopic');
+
+        const topicOptions = {
+            simple: [
+                { value: "casa/ledazul", text: "Sala" },
+                { value: "casa/ledrojo", text: "Dormitorio Principal" },
+                { value: "casa/ledverde", text: "Dormitorio invitado" }
+            ],
+            control: [
+                { value: "casa/ledazul/pwm", text: "Sala(Nivel)" },
+                { value: "casa/ledrojo/pwm", text: "Dormitorio Principal(Nivel)" },
+                { value: "casa/ledverde/pwm", text: "Dormitorio invitado(Nivel)" }
+            ]
         };
 
-        try {
-          const response = await fetch('/api/lights', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(newLight),
-          });
-
-          if (!response.ok) {
-            throw new Error('Error al guardar la luz en la base de datos');
-          }
-
-          const result = await response.json();
-          console.log('Luz guardada en la base de datos:', result);
-
-          // Cerrar el modal
-          closeModal(addLightModal);
-
-          // Recargar todas las interfaces para mostrar la nueva luz
-          loadAllInterfaces();
-
-          // Limpiar los campos del formulario
-          document.getElementById('lightName').value = '';
-          document.getElementById('lightTopic').value = '';
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Hubo un error al guardar la luz. Por favor, intenta de nuevo.');
+        function updateLightTopicOptions() {
+            const selectedType = lightTypeSelect.value;
+            lightTopicSelect.innerHTML = '';
+            topicOptions[selectedType].forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.value;
+                optionElement.textContent = option.text;
+                lightTopicSelect.appendChild(optionElement);
+            });
+            updateLightName();
         }
-      }
-    };
 
+        function updateLightName() {
+            const selectedOption = lightTopicSelect.options[lightTopicSelect.selectedIndex];
+            if (selectedOption) {
+                const text = selectedOption.text;
+                if (text.includes('Dormitorio Principal')) {
+                    lightNameInput.value = 'Dormitorio Principal';
+                } else if (text.includes('Dormitorio invitado')) {
+                    lightNameInput.value = 'Dormitorio invitado';
+                } else if (text.includes('Sala')) {
+                    lightNameInput.value = 'Sala';
+                }
+            }
+        }
+
+        lightTypeSelect.addEventListener('change', updateLightTopicOptions);
+        lightTopicSelect.addEventListener('change', updateLightName);
+
+        // Inicializar las opciones del topic al cargar la página
+        updateLightTopicOptions();
+
+        // Actualizar el event listener existente para el botón de guardar
+        saveNewLight.onclick = async () => {
+            const type = lightTypeSelect.value;
+            const name = lightNameInput.value;
+            const topic = lightTopicSelect.value;
+            if (name && topic) {
+                const newLight = {
+                    nombre: name,
+                    lucesid: topic,
+                    tipo: type,
+                    id_usuario: userId
+                };
+
+                try {
+                    const response = await fetch('/api/lights', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify(newLight),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Error al guardar la luz en la base de datos');
+                    }
+
+                    const result = await response.json();
+                    console.log('Luz guardada en la base de datos:', result);
+
+                    // Cerrar el modal
+                    closeModal(addLightModal);
+
+                    // Recargar todas las interfaces para mostrar la nueva luz
+                    loadAllInterfaces();
+
+                    // Limpiar los campos del formulario
+                    lightTypeSelect.value = 'simple';
+                    lightNameInput.value = '';
+                    updateLightTopicOptions();
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Hubo un error al guardar la luz. Por favor, intenta de nuevo.');
+                }
+            }
+        };
     // Inicialización
     document.addEventListener('DOMContentLoaded', async () => {
       try {
@@ -795,6 +968,7 @@
       console.error('Error no manejado:', event.error);
       alert('Ha ocurrido un error inesperado. Por favor, recarga la página e intenta de nuevo.');
     });
+    
   </script>
 </body>
 </html>

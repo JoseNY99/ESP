@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registro de Usuario</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="download.png">
+  <link rel="apple-touch-icon" href="download.png">
   <style>
     :root {
       --primary-color: #4a90e2;
@@ -278,7 +280,7 @@
     usernameInput.addEventListener('blur', async () => {
       const username = usernameInput.value;
       if (username) {
-        const isAvailable = await checkAvailability('username', username);
+        const isAvailable = await checkAvailability('nombre_usuario', username);
         usernameMessage.textContent = isAvailable ? 'Nombre de usuario disponible' : 'Nombre de usuario ya existe';
         usernameMessage.className = `message ${isAvailable ? 'success' : 'error'}`;
       }
