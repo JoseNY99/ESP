@@ -1,6 +1,7 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
 const router = express.Router();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const deleteInterfaceHandler = require('./api/user-interfaces/[id]');
 const userInterfacesHandler = require('./api/user-interfaces');
 
@@ -10,6 +11,9 @@ const dbConfig = {
   password: 'Tcc2024*',
   database: 'TccEsp1'
 };
+
+// Initialize Gemini API
+const genAI = new GoogleGenerativeAI("AIzaSyCxRDa-O8tYEEs78is4tOGt0G-mD0nPrY4");
 
 // Middleware to check authentication
 const checkAuth = (req, res, next) => {
@@ -109,29 +113,29 @@ router.get('/api/consulta-energia', async (req, res) => {
 
   try {
     const connection = await mysql.createConnection(dbConfig);
-    let respuesta = '';
+    let prompt = '';
 
     switch (tipo) {
       case 'consumo24h':
         const [consumo24h] = await connection.execute(
           'SELECT SUM(value) as consumo FROM sensor_data WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 24 HOUR)'
         );
-        respuesta = `En las últimas 24 horas has consumido aproximadamente ${(consumo24h[0].consumo / 1000).toFixed(2)} kWh.`;
+        prompt = `En las últimas 24 horas se ha consumido aproximadamente ${(consumo24h[0].consumo / 1000).toFixed(2)} kWh. Proporciona un análisis detallado de este consumo y sugerencias para mejorarlo.`;
         break;
 
       case 'consumoMensual':
         const [consumoMensual] = await connection.execute(
           'SELECT SUM(value) as consumo FROM sensor_data WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 MONTH)'
         );
-        respuesta = `Tu consumo mensual de energía es de aproximadamente ${(consumoMensual[0].consumo / 1000).toFixed(2)} kWh.`;
+        prompt = `El consumo mensual de energía es de aproximadamente ${(consumoMensual[0].consumo / 1000).toFixed(2)} kWh. Analiza este consumo y proporciona recomendaciones para reducirlo.`;
         break;
 
       case 'reducirConsumo':
-        respuesta = "Para reducir el consumo de energía:\n1. Apaga las luces cuando no estés en la habitación.\n2. Utiliza temporizadores para las luces exteriores.\n3. Reemplaza las bombillas tradicionales por LED.\n4. Aprovecha la luz natural durante el día.";
+        prompt = "Proporciona consejos detallados sobre cómo reducir el consumo de energía durante el día y la noche en un hogar.";
         break;
 
       case 'eficienciaIluminacion':
-        respuesta = "Para mejorar la eficiencia energética de la iluminación:\n1. Usa bombillas LED de alta eficiencia.\n2. Instala sensores de movimiento en pasillos y exteriores.\n3. Utiliza reguladores de intensidad.\n4. Pinta las paredes de colores claros para reflejar mejor la luz.";
+        prompt = "Explica cómo mejorar la eficiencia energética de la iluminación en un hogar, incluyendo tipos de bombillas y estrategias de uso.";
         break;
 
       case 'alertaConsumo':
@@ -139,48 +143,52 @@ router.get('/api/consulta-energia', async (req, res) => {
           'SELECT AVG(value) as promedio FROM sensor_data WHERE timestamp >= DATE_SUB(NOW(), INTERVAL 1 HOUR)'
         );
         const promedioHora = alertaConsumo[0].promedio;
-        if (promedioHora > 1000) { // Suponiendo que 1000 mA es un umbral alto
-          respuesta = `Alerta: El consumo promedio en la última hora (${promedioHora.toFixed(2)} mA) es elevado.`;
-        } else {
-          respuesta = "No se han detectado alertas de consumo excesivo en este momento.";
-        }
+        prompt = `El consumo promedio en la última hora es de ${promedioHora.toFixed(2)} mA. Analiza si esto representa un consumo excesivo y proporciona recomendaciones.`;
         break;
 
       case 'tipsAhorro':
-        respuesta = "Tips de ahorro de energía:\n1. Usa electrodomésticos eficientes.\n2. Desconecta aparatos que no estés usando.\n3. Aprovecha la luz natural.\n4. Mantén una temperatura adecuada en tu hogar.\n5. Realiza mantenimiento regular a tus electrodomésticos.";
+        prompt = "Proporciona tips detallados y específicos para ahorrar energía en un hogar, basados en las últimas tendencias y tecnologías.";
         break;
 
       case 'lucesConsumo':
         const [lucesConsumo] = await connection.execute(
           'SELECT sensor_type, AVG(value) as promedio FROM sensor_data GROUP BY sensor_type ORDER BY promedio DESC LIMIT 3'
         );
-        respuesta = "Las luces que más consumen son:\n" + 
-          lucesConsumo.map(luz => `${luz.sensor_type}: ${luz.promedio.toFixed(2)} mA en promedio`).join('\n');
+        prompt = "Analiza el consumo de las siguientes luces y proporciona recomendaciones para optimizar su uso: " + 
+          lucesConsumo.map(luz => `${luz.sensor_type}: ${luz.promedio.toFixed(2)} mA en promedio`).join(', ');
         break;
 
       case 'intensidadLED':
-        respuesta = "El consumo de energía de las luces LED varía linealmente con la intensidad. Reducir la intensidad al 50% generalmente resulta en un ahorro de energía del 50%.";
+        prompt = "Explica cómo varía el consumo de energía cuando se ajusta la intensidad de las luces LED y proporciona recomendaciones para su uso óptimo.";
         break;
 
       case 'tiempoUsoLED':
-        respuesta = "El tiempo ideal de uso diario para optimizar el ahorro con luces LED es utilizarlas solo cuando sea necesario. Las LED son eficientes incluso con uso prolongado, pero se recomienda apagarlas cuando no se necesiten para maximizar el ahorro.";
+        prompt = "Analiza y recomienda el tiempo ideal de uso diario para optimizar el ahorro con luces LED en diferentes áreas de un hogar.";
         break;
 
       case 'configuracionHorarios':
-        respuesta = "Configuración recomendada para optimizar el consumo:\n1. Luces exteriores: Encendido al anochecer, apagado al amanecer.\n2. Áreas comunes: Encendido a las 6 AM, apagado a las 11 PM.\n3. Dormitorios: Encendido a las 7 PM, apagado a las 11 PM.\n4. Usa sensores de movimiento en pasillos y baños.";
+        prompt = "Proporciona una configuración detallada de horarios para las luces LED en diferentes áreas de un hogar para optimizar el consumo de energía.";
         break;
 
       default:
-        respuesta = "Tipo de consulta no reconocido.";
+        prompt = "Proporciona información general sobre el ahorro de energía en el hogar.";
     }
 
     await connection.end();
+
+    // Call Gemini API
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const respuesta = response.text();
+
     res.json({ respuesta });
   } catch (error) {
     console.error('Error en la consulta de energía:', error);
     res.status(500).json({ error: 'Error en el servidor al procesar la consulta' });
   }
 });
+
 router.get('/api/energy-consumption', async (req, res) => {
   const { period } = req.query;
 
@@ -238,4 +246,6 @@ router.get('/api/energy-consumption', async (req, res) => {
     res.status(500).json({ error: 'Error fetching energy consumption data' });
   }
 });
+
 module.exports = router;
+
