@@ -579,8 +579,8 @@
       
       if (selectedOption.includes('Dormitorio Principal')) {
         lightNameInput.value = 'Nombre de la luz: Dormitorio Principal';
-      } else if (selectedOption.includes('Dormitorio invitado')) {
-        lightNameInput.value = 'Nombre de la luz: Dormitorio invitado';
+      } else if (selectedOption.includes('Cocina')) {
+        lightNameInput.value = 'Nombre de la luz: Cocina';
       } else if (selectedOption.includes('Sala')) {
         lightNameInput.value = 'Nombre de la luz: Sala';
       }
@@ -856,12 +856,12 @@
             simple: [
                 { value: "casa/ledazul", text: "Sala" },
                 { value: "casa/ledrojo", text: "Dormitorio Principal" },
-                { value: "casa/ledverde", text: "Dormitorio invitado" }
+                { value: "casa/ledverde", text: "Cocina" }
             ],
             control: [
                 { value: "casa/ledazul/pwm", text: "Sala(Nivel)" },
                 { value: "casa/ledrojo/pwm", text: "Dormitorio Principal(Nivel)" },
-                { value: "casa/ledverde/pwm", text: "Dormitorio invitado(Nivel)" }
+                { value: "casa/ledverde/pwm", text: "Cocina(Nivel)" }
             ]
         };
 
@@ -883,8 +883,8 @@
                 const text = selectedOption.text;
                 if (text.includes('Dormitorio Principal')) {
                     lightNameInput.value = 'Dormitorio Principal';
-                } else if (text.includes('Dormitorio invitado')) {
-                    lightNameInput.value = 'Dormitorio invitado';
+                } else if (text.includes('Cocina')) {
+                    lightNameInput.value = 'Cocina';
                 } else if (text.includes('Sala')) {
                     lightNameInput.value = 'Sala';
                 }
