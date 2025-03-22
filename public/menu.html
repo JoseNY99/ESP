@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Luz con shiftr.io</title>
+  <title>Control de Luz</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="download.png">
   <link rel="apple-touch-icon" href="download.png">
@@ -63,6 +63,46 @@
     .sidebar a:hover {
       background-color: var(--hover-color);
       transform: translateX(5px);
+    }
+
+    /* Estilos para el select transparente */
+    #userInterfaces {
+      background-color: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+      outline: none;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+    /* Estilo para el dropdown arrow */
+    #userInterfaces {
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 16px;
+      padding-right: 30px;
+    }
+
+    /* Estilo para las opciones */
+    #userInterfaces option {
+      background-color: rgba(44, 62, 80, 0.9);
+      color: white;
+    }
+
+    /* Estados hover y focus */
+    #userInterfaces:hover, #userInterfaces:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
     }
 
     .content {
@@ -802,50 +842,47 @@
     }
 
     userInterfaces.addEventListener('change', async (event) => {
-      const selectedId = event.target.value;
-      if (selectedId) {
-        try {
-          const response = await fetch(`/api/user-interfaces/${selectedId}`, {
-            credentials: 'include'
-          });
-          if (!response.ok) {
-            throw new Error('Error al cargar los detalles de la interfaz');
-          }
-          const interfaceDetails = await response.json();
-          
-          // Limpiar el contenedor de habitaciones
-          roomsContainer.innerHTML = '';
-
-          // Crear el elemento de la luz seleccionada
-          const newRoom = document.createElement('div');
-          newRoom.className = 'room';
-          newRoom.dataset.id = interfaceDetails.id;
-          newRoom.innerHTML = `
-            <h2>${interfaceDetails.nombre}</h2>
-            ${interfaceDetails.tipo === 'simple' ? `
-              <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'on')">Encender</button>
-              <button class="room-btn" onclick="enviarMensaje('${interfaceDetails.lucesid}', 'off')">Apagar</button>
-            ` : interfaceDetails.tipo === 'control' ? `
-              <div class="slider-container">
-                <input type="range" min="0" max="1023" value="0" class="slider" oninput="enviarMensaje('${interfaceDetails.lucesid}', this.value)">
-                <p>Brillo: <span>0</span></p>
-              </div>
-            ` : `
-              <p>Tipo de interfaz no reconocido: ${interfaceDetails.tipo}</p>
-            `}
-            <div class="estado-luz"></div>
-            <button class="delete-btn" onclick="deleteInterface(${interfaceDetails.id})">Eliminar</button>
-          `;
-          roomsContainer.appendChild(newRoom);
-        } catch (error) {
-          console.error('Error:', error);
-          alert('Error al cargar los detalles de la interfaz');
-        }
-      } else {
-        // Si no se selecciona ninguna interfaz, mostrar todas las interfaces
-        loadAllInterfaces();
+  const selectedId = event.target.value;
+  if (selectedId) {
+    try {
+      const response = await fetch(`/api/user-interfaces/${selectedId}`, {
+        credentials: 'include'
+      });
+      
+      if (response.status === 404) {
+        // Handle the case where the interface doesn't exist
+        console.warn(`Interface with ID ${selectedId} not found`);
+        alert(`La interfaz seleccionada ya no existe. Se actualizará la lista.`);
+        // Refresh the interface list to remove the non-existent option
+        await loadAllInterfaces();
+        return;
       }
-    });
+      
+      if (!response.ok) {
+        throw new Error(`Error al cargar los detalles de la interfaz: ${response.status} ${response.statusText}`);
+      }
+      
+      const interfaceDetails = await response.json();
+      
+      // Limpiar el contenedor de habitaciones
+      roomsContainer.innerHTML = '';
+
+      // Crear el elemento de la luz seleccionada
+      const newRoom = createInterfaceElement(interfaceDetails);
+      roomsContainer.appendChild(newRoom);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al cargar los detalles de la interfaz. Por favor, intenta de nuevo.');
+      // Reset the select to the default option
+      userInterfaces.value = "";
+      // Show all interfaces again
+      loadAllInterfaces();
+    }
+  } else {
+    // Si no se selecciona ninguna interfaz, mostrar todas las interfaces
+    loadAllInterfaces();
+  }
+});
 
     // Llamar a loadAllInterfaces cuando se guarda una nueva luz
     const lightTypeSelect = document.getElementById('lightType');
@@ -972,3 +1009,4 @@
   </script>
 </body>
 </html>
+

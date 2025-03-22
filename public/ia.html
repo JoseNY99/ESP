@@ -123,6 +123,56 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
 
+    textarea {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 1rem;
+      background-color: #fff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      resize: vertical;
+      min-height: 80px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .loading-dots {
+      display: inline-block;
+    }
+
+    .loading-dots span {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      margin: 0 5px;
+      animation: loading 1.4s infinite ease-in-out both;
+    }
+
+    .loading-dots span:nth-child(1) {
+      animation-delay: -0.32s;
+    }
+
+    .loading-dots span:nth-child(2) {
+      animation-delay: -0.16s;
+    }
+
+    @keyframes loading {
+      0%, 80%, 100% { 
+        transform: scale(0);
+      } 40% { 
+        transform: scale(1.0);
+      }
+    }
+
     .graph-container {
       background-color: white;
       border-radius: 8px;
@@ -222,20 +272,20 @@
       <h1>Calculadora de Energía y Consultas</h1>
       <button type="button" id="botonCalcular">Calcular Costo de Energía</button>
       <pre id="resultadoCalculo"></pre>
-      <select id="consultaSelector">
-        <option value="">Selecciona una consulta</option>
-        <option value="consumo24h">¿Cuánto he consumido en las últimas 24 horas?</option>
-        <option value="consumoMensual">¿Cuál es mi consumo mensual de energía?</option>
-        <option value="reducirConsumo">¿Cómo puedo reducir el consumo de energía durante el día/noche?</option>
-        <option value="eficienciaIluminacion">¿Cómo puedo mejorar la eficiencia energética de la iluminación en mi hogar?</option>
-        <option value="alertaConsumo">¿Existe alguna alerta de consumo excesivo en mi hogar?</option>
-        <option value="tipsAhorro">¿Me podrías recomendar tips de ahorro de energía basados en mi consumo actual?</option>
-        <option value="lucesConsumo">¿Qué luces están consumiendo más energía en mi hogar y por qué?</option>
-        <option value="intensidadLED">¿Cómo varía el consumo de energía cuando ajusto la intensidad de las luces LED?</option>
-        <option value="tiempoUsoLED">¿Cuál es el tiempo ideal de uso diario para optimizar el ahorro con luces LED?</option>
-        <option value="configuracionHorarios">¿Qué configuración de horarios para las luces LED me recomendarías para optimizar el consumo?</option>
-      </select>
+      
+      <!-- Reemplazar el selector por un textarea -->
+      <textarea id="consultaTexto" placeholder="Escribe tu consulta sobre el consumo de energía de tus luces..."></textarea>
       <button type="button" id="botonConsulta">Realizar Consulta</button>
+      
+      <div id="loading" class="loading">
+        <div class="loading-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <p>Procesando tu consulta...</p>
+      </div>
+      
       <pre id="resultadoConsulta"></pre>
       
       <div class="graph-container">
@@ -244,6 +294,7 @@
           <button class="graph-button active" data-period="day">Diario</button>
           <button class="graph-button" data-period="week">Semanal</button>
           <button class="graph-button" data-period="month">Mensual</button>
+          <button class="graph-button" data-period="year">Anual</button>
         </div>
         <canvas id="energyChart"></canvas>
       </div>
@@ -251,40 +302,52 @@
   </div>
 
   <script>
-    // Constants for energy calculation
-    const BULB_POWER = 9; // W
-    const USAGE_HOURS = 8; // hours per day
-    const MONTHLY_CONSUMPTION = 2; // kWh
-    const TARIFF = 435.51; // G/kWh
+    // Reemplaza todo el código JavaScript en tu archivo HTML con este código actualizado
 
-    // MQTT Configuration
-    const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
-    const mqttOptions = {
-      username: 'crazyjester833',
-      password: 'MOX70ExUuSBpjdQl'
-    };
+document.addEventListener('DOMContentLoaded', function() {
+  // Constants for energy calculation
+  const BULB_POWER = 9; // W
+  const USAGE_HOURS = 8; // hours per day
+  const MONTHLY_CONSUMPTION = 2; // kWh
+  const TARIFF = 435.51; // G/kWh
 
-    // Connect to MQTT broker
-    const client = mqtt.connect(mqttServer, mqttOptions);
+  // MQTT Configuration
+  const mqttServer = 'wss://crazyjester833.cloud.shiftr.io:443';
+  const mqttOptions = {
+    username: 'crazyjester833',
+    password: 'MOX70ExUuSBpjdQl'
+  };
 
-    const botonCalcular = document.querySelector("#botonCalcular");
-    const resultadoCalculo = document.querySelector("#resultadoCalculo");
-    const consultaSelector = document.querySelector("#consultaSelector");
-    const botonConsulta = document.querySelector("#botonConsulta");
-    const resultadoConsulta = document.querySelector("#resultadoConsulta");
-    const graphButtons = document.querySelectorAll(".graph-button");
-    const mqttValues = document.querySelector("#mqttValues");
-    let chart;
+  // Connect to MQTT broker
+  let client;
+  try {
+    client = mqtt.connect(mqttServer, mqttOptions);
+  } catch (error) {
+    console.error('Error connecting to MQTT:', error);
+  }
 
-    const topics = [
-      'casa/ledazul',
-      'casa/ledverde',
-      'casa/ledrojo',
-      'sensor/corriente',
-      'sensor/voltaje',
-      'sensor/potencia'
-    ];
+  // DOM Elements
+  const botonCalcular = document.querySelector("#botonCalcular");
+  const resultadoCalculo = document.querySelector("#resultadoCalculo");
+  const consultaTexto = document.querySelector("#consultaTexto");
+  const botonConsulta = document.querySelector("#botonConsulta");
+  const resultadoConsulta = document.querySelector("#resultadoConsulta");
+  const loadingIndicator = document.querySelector("#loading");
+  const graphButtons = document.querySelectorAll(".graph-button");
+  const mqttValues = document.querySelector("#mqttValues");
+  let chart;
 
+  const topics = [
+    'casa/ledazul',
+    'casa/ledverde',
+    'casa/ledrojo',
+    'sensor/corriente',
+    'sensor/voltaje',
+    'sensor/potencia'
+  ];
+
+  // MQTT Event Handlers
+  if (client) {
     client.on('connect', () => {
       console.log('Connected to MQTT broker');
       topics.forEach(topic => client.subscribe(topic));
@@ -294,119 +357,264 @@
       console.log('Received message:', topic, message.toString());
       updateMqttValue(topic, message.toString());
     });
+  }
 
-    function updateMqttValue(topic, value) {
-      let element = document.getElementById(topic);
-      if (!element) {
-        element = document.createElement('div');
-        element.id = topic;
-        element.className = 'mqtt-value';
-        mqttValues.appendChild(element);
-      }
-      element.innerHTML = `<strong>${topic}:</strong> ${value}`;
+  function updateMqttValue(topic, value) {
+    let element = document.getElementById(topic);
+    if (!element) {
+      element = document.createElement('div');
+      element.id = topic;
+      element.className = 'mqtt-value';
+      mqttValues.appendChild(element);
     }
+    element.innerHTML = `<strong>${topic}:</strong> ${value}`;
+  }
 
-    botonCalcular.addEventListener("click", calcularCostoEnergia);
+  // Event Listeners
+  if (botonCalcular) {
+    botonCalcular.addEventListener("click", function() {
+      console.log("Botón Calcular clickeado");
+      calcularCostoEnergia();
+    });
+  } else {
+    console.error("Elemento botonCalcular no encontrado");
+  }
+
+  if (botonConsulta) {
     botonConsulta.addEventListener("click", realizarConsulta);
+  }
+
+  if (consultaTexto) {
+    consultaTexto.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        realizarConsulta();
+      }
+    });
+  }
+
+  if (graphButtons) {
     graphButtons.forEach(button => {
       button.addEventListener("click", () => updateGraph(button.dataset.period));
     });
+  }
 
-    async function fetchSensorData() {
-      try {
-        const response = await fetch('/api/sensor-data');
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        }
-        const data = await response.json();
-        if (data.length === 0) {
-          throw new Error('No sensor data available');
-        }
-        console.log('Fetched sensor data:', data);
-        return data;
-      } catch (error) {
-        console.error('Error fetching sensor data:', error);
-        resultadoCalculo.textContent = `Error: ${error.message}`;
-        return [];
-      }
+  // Main Functions
+  async function calcularCostoEnergia() {
+    console.log("Iniciando cálculo de costo de energía");
+    
+    if (!resultadoCalculo) {
+      console.error('Element with ID "resultadoCalculo" not found.');
+      return;
     }
 
-    async function calcularCostoEnergia() {
-      resultadoCalculo.textContent = "Calculando...";
-      try {
-        const sensorData = await fetchSensorData();
-
-        if (sensorData.length === 0) {
-          resultadoCalculo.textContent = "No hay datos del sensor disponibles. Por favor, verifica la conexión con la base de datos.";
-          return;
-        }
-
-        const totalConsumption = sensorData.reduce((acc, reading) => acc + reading.value, 0) / 1000; // Convert mA to A
-        const energyConsumed = (totalConsumption * BULB_POWER * USAGE_HOURS) / 1000; // kWh
-        const monthlyCost = energyConsumed * TARIFF;
-
-        const calculation = `
-          Consumo total: ${totalConsumption.toFixed(2)} A
-          Energía consumida: ${energyConsumed.toFixed(2)} kWh
-          Costo mensual estimado: ${monthlyCost.toFixed(2)} G
-        `;
-
-        resultadoCalculo.textContent = calculation;
-      } catch (error) {
-        console.error('Error en el cálculo de energía:', error);
-        resultadoCalculo.textContent = `Error en el cálculo: ${error.message}`;
+    resultadoCalculo.textContent = "Calculando...";
+    
+    try {
+      // Primero intentamos obtener los datos directamente de la base de datos
+      console.log("Fetching sensor data...");
+      const response = await fetch('/api/sensor-data');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    }
-
-    async function realizarConsulta() {
-      const selectedOption = consultaSelector.value;
-      if (!selectedOption) {
-        resultadoConsulta.textContent = "Por favor, selecciona una consulta.";
+      
+      const sensorData = await response.json();
+      console.log("Sensor data received:", sensorData);
+      
+      if (!sensorData || sensorData.length === 0) {
+        resultadoCalculo.textContent = "No hay datos de sensores disponibles.";
         return;
       }
-
-      resultadoConsulta.textContent = "Procesando consulta...";
-
+      
+      // Calcular valores promedio, mínimo y máximo (asumiendo que los valores están en mA)
+      let totalValue = 0;
+      let minValue = Number.MAX_VALUE;
+      let maxValue = Number.MIN_VALUE;
+      let count = 0;
+      
+      sensorData.forEach(reading => {
+        if (reading.value !== undefined && reading.value !== null) {
+          const value = parseFloat(reading.value);
+          if (!isNaN(value)) {
+            totalValue += value;
+            minValue = Math.min(minValue, value);
+            maxValue = Math.max(maxValue, value);
+            count++;
+          }
+        }
+      });
+      
+      if (count === 0) {
+        resultadoCalculo.textContent = "No hay lecturas válidas en los datos de sensores.";
+        return;
+      }
+      
+      const avgValueMA = totalValue / count;
+      
+      // Convertir mA a A
+      const avgValueA = avgValueMA / 1000;
+      
+      // Calcular potencia y energía
+      const voltage = 220; // Voltaje estándar en Paraguay (V)
+      const powerWatts = voltage * avgValueA;
+      const energyConsumed = (powerWatts * 24) / 1000; // kWh en 24 horas
+      
+      // Calcular costos
+      const tariff = 435.51; // G/kWh
+      const dailyCost = energyConsumed * tariff;
+      const monthlyCost = dailyCost * 30;
+      const annualCost = monthlyCost * 12;
+      
+      // Formatear la salida
+      const calculation = `
+        Datos de las últimas 24 horas:
+        Muestras analizadas: ${count}
+        Consumo mínimo: ${(minValue / 1000).toFixed(4)} A (${minValue.toFixed(2)} mA)
+        Consumo máximo: ${(maxValue / 1000).toFixed(4)} A (${maxValue.toFixed(2)} mA)
+        Consumo promedio: ${avgValueA.toFixed(4)} A (${avgValueMA.toFixed(2)} mA)
+        
+        Cálculos de energía:
+        Potencia estimada: ${powerWatts.toFixed(2)} W
+        Energía consumida en 24 horas: ${energyConsumed.toFixed(2)} kWh
+        
+        Costos estimados:
+        Costo diario: ${dailyCost.toFixed(2)} G
+        Costo mensual (30 días): ${monthlyCost.toFixed(2)} G
+        Costo anual: ${annualCost.toFixed(2)} G
+      `;
+      
+      console.log("Calculation completed:", calculation);
+      resultadoCalculo.textContent = calculation;
+      
+    } catch (error) {
+      console.error('Error en el cálculo de energía:', error);
+      
+      // Si falla el primer método, intentamos con el endpoint energy-cost-data
       try {
-        const response = await fetch(`/api/consulta-energia?tipo=${selectedOption}`);
+        console.log("Trying alternative endpoint...");
+        const response = await fetch('/api/energy-cost-data');
+        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const data = await response.json();
-        resultadoConsulta.textContent = data.respuesta;
-      } catch (error) {
-        resultadoConsulta.textContent = 'Error al procesar la consulta: ' + error.message;
-      }
-    }
-
-    async function fetchEnergyConsumptionData(period) {
-      try {
-        const response = await fetch(`/api/energy-consumption?period=${period}`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        console.log("Energy cost data received:", data);
+        
+        if (!data || !data.calculations) {
+          resultadoCalculo.textContent = "No hay datos suficientes para realizar el cálculo.";
+          return;
         }
-        return await response.json();
-      } catch (error) {
-        console.error('Error fetching energy consumption data:', error);
-        return null;
+        
+        const calc = data.calculations;
+        const raw = data.raw_data;
+        
+        const calculation = `
+          Datos de las últimas 24 horas:
+          Muestras analizadas: ${raw.sample_count}
+          Consumo mínimo: ${(raw.min_consumption / 1000).toFixed(4)} A (${raw.min_consumption.toFixed(2)} mA)
+          Consumo máximo: ${(raw.max_consumption / 1000).toFixed(4)} A (${raw.max_consumption.toFixed(2)} mA)
+          Consumo promedio: ${calc.average_consumption_amps.toFixed(4)} A (${calc.average_consumption_amps * 1000} mA)
+          
+          Cálculos de energía:
+          Potencia estimada: ${calc.power_watts.toFixed(2)} W
+          Energía consumida en 24 horas: ${calc.energy_consumed_kwh.toFixed(2)} kWh
+          
+          Costos estimados:
+          Costo diario: ${calc.daily_cost.toFixed(2)} G
+          Costo mensual (30 días): ${calc.monthly_cost.toFixed(2)} G
+          Costo anual: ${calc.annual_cost.toFixed(2)} G
+        `;
+        
+        console.log("Alternative calculation completed:", calculation);
+        resultadoCalculo.textContent = calculation;
+        
+      } catch (secondError) {
+        console.error('Error en el cálculo alternativo:', secondError);
+        resultadoCalculo.textContent = `Error en el cálculo: ${error.message}. Intento alternativo: ${secondError.message}`;
       }
     }
+  }
 
-    async function updateGraph(period) {
+  async function realizarConsulta() {
+    const consulta = consultaTexto.value.trim();
+    
+    if (!consulta) {
+      resultadoConsulta.textContent = "Por favor, escribe una consulta.";
+      return;
+    }
+    
+    // Mostrar indicador de carga
+    resultadoConsulta.textContent = "";
+    loadingIndicator.style.display = 'block';
+    
+    try {
+      const response = await fetch('/api/consulta-libre', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ consulta })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        resultadoConsulta.textContent = data.error;
+      } else {
+        resultadoConsulta.textContent = data.respuesta;
+      }
+    } catch (error) {
+      console.error('Error al procesar la consulta:', error);
+      resultadoConsulta.textContent = 'Error al procesar la consulta: ' + error.message;
+    } finally {
+      // Ocultar indicador de carga
+      loadingIndicator.style.display = 'none';
+    }
+  }
+
+  async function fetchEnergyConsumptionData(period) {
+    try {
+      const response = await fetch(`/api/energy-consumption?period=${period}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching energy consumption data:', error);
+      return { data: [], interval: "HOUR" };
+    }
+  }
+
+  async function updateGraph(period) {
+    try {
       graphButtons.forEach(btn => btn.classList.remove('active'));
       document.querySelector(`[data-period="${period}"]`).classList.add('active');
 
-      const { data, interval } = await fetchEnergyConsumptionData(period);
+      const result = await fetchEnergyConsumptionData(period);
+      const data = result.data || [];
+      const interval = result.interval || "HOUR";
 
-      if (!data) {
+      if (!data || data.length === 0) {
         console.error('No data available for graph');
         return;
       }
 
       const labels = data.map(item => {
         const date = new Date(item.time_interval);
-        return interval === 'HOUR' ? date.toLocaleTimeString() : date.toLocaleDateString();
+        if (interval === 'HOUR') {
+          return date.toLocaleTimeString();
+        } else if (interval === 'MONTH') {
+          // Para datos anuales, mostrar solo el nombre del mes
+          return date.toLocaleDateString('es-ES', { month: 'long' });
+        } else {
+          return date.toLocaleDateString();
+        }
       });
 
       const consumptionData = data.map(item => item.average_consumption);
@@ -417,48 +625,60 @@
         chart.update();
       } else {
         const ctx = document.getElementById('energyChart').getContext('2d');
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Consumo de Energía',
-              data: consumptionData,
-              borderColor: 'rgb(75, 192, 192)',
-              tension: 0.1
-            }]
-          },
-          options: {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true,
-                title: {
-                  display: true,
-                  text: 'Consumo (mA)'
+        if (ctx) {
+          chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: 'Consumo de Energía',
+                data: consumptionData,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+              }]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Consumo (mA)'
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: period === 'day' ? 'Hora' : period === 'year' ? 'Mes' : 'Fecha'
+                  }
                 }
               },
-              x: {
+              plugins: {
                 title: {
                   display: true,
-                  text: period === 'day' ? 'Hora' : 'Fecha'
+                  text: `Consumo de Energía ${period === 'day' ? 'Diario' : period === 'week' ? 'Semanal' : period === 'month' ? 'Mensual' : 'Anual'}`
                 }
               }
-            },
-            plugins: {
-              title: {
-                display: true,
-                text: `Consumo de Energía - ${period === 'day' ? 'Diario' : period === 'week' ? 'Semanal' : 'Mensual'}`
-              }
             }
-          }
-        });
+          });
+        } else {
+          console.error('Canvas element "energyChart" not found');
+        }
       }
+    } catch (error) {
+      console.error('Error updating graph:', error);
     }
+  }
 
-    // Initialize the graph with daily data
+  // Initialize the graph with daily data
+  if (document.getElementById('energyChart')) {
     updateGraph('day');
+  }
+
+  // Ejecutar cálculo inicial si es necesario
+  // calcularCostoEnergia();
+});
   </script>
 </body>
 </html>
-
